@@ -24,29 +24,6 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
-
-      - name: Prepare web assets directory
-        run: |
-          mkdir -p out
-          cat << 'EOF' > out/index.html
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-              <title>MNI Members</title>
-            </head>
-            <body>
-              <div id="root"></div>
-            </body>
-          </html>
-          EOF
-
-      - name: Sync Capacitor Android
-        run: npx cap sync android
-
       - name: Make Gradle executable
         run: chmod +x android/gradlew
 
