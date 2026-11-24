@@ -1,0 +1,112 @@
+@import 'tailwindcss';
+
+/*
+ * MNI design tokens
+ * ─────────────────
+ * Brand values come from the MNI style guide. Muted and status text colours
+ * are darkened where needed so small text meets WCAG 2.2 AA (≥ 4.5:1) on both
+ * the canvas (#F3F6F8) and white surfaces.
+ */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-brand: #215ce5;
+  --color-brand-strong: #1a4bc4;
+  --color-navy: #102c60;
+  --color-navy-strong: #0b224e;
+  --color-ink: #12233e;
+  --color-canvas: #f3f6f8;
+  --color-surface: #ffffff;
+  --color-subtle: #f8fafc;
+  --color-pale: #eaf0fc;
+  --color-line: #dce3eb;
+  --color-line-strong: #c3cdd9;
+  --color-muted: #536477; /* 5.6:1 on canvas */
+  --color-success: #167c60;
+  --color-success-bg: #e7f5f0;
+  --color-warning: #a14b06; /* 5.3:1 on its bg */
+  --color-warning-bg: #fdf3e6;
+  --color-danger: #b42318;
+  --color-danger-bg: #fdecea;
+  --color-coin: #b7791f;
+  --color-on-navy-muted: #b8c7e6; /* 7.5:1 on navy */
+
+  --radius-control: 12px;
+  --radius-art: 16px;
+  --radius-card: 20px;
+  --radius-panel: 24px;
+
+  --text-caption: 0.75rem; /* 12px — minimum size used anywhere */
+  --text-caption--line-height: 1rem;
+  --text-label: 0.8125rem; /* 13px */
+  --text-label--line-height: 1.125rem;
+  --text-body: 0.9375rem; /* 15px */
+  --text-body--line-height: 1.5rem;
+  --text-section: 1.125rem; /* 18px */
+  --text-section--line-height: 1.5rem;
+  --text-title: 1.625rem; /* 26px */
+  --text-title--line-height: 2rem;
+
+  --shadow-card: 0 1px 2px rgb(16 44 96 / 0.04), 0 1px 1px rgb(16 44 96 / 0.03);
+  --shadow-raised: 0 8px 24px -8px rgb(16 44 96 / 0.18);
+
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-sheet-up: sheet-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: var(--color-pale);
+    color: var(--color-navy);
+  }
+  dialog::backdrop {
+    background: rgb(11 34 78 / 0.55);
+    backdrop-filter: blur(4px);
+  }
+  dialog[open] {
+    animation: var(--animate-sheet-up);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+@utility safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
