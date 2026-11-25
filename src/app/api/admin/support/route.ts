@@ -21,3 +21,17 @@ export const PATCH = handler(async (req) => {
 
   return ok({ ok: true, ticket: updated })
 })
+
+export const DELETE = handler(async (req) => {
+  assertSameOrigin(req)
+  const { payload } = await requireApiAdmin(req)
+  const { id } = await parseJson(req, z.object({ id: z.number() }))
+
+  await payload.delete({
+    collection: 'login-help-requests',
+    id,
+    overrideAccess: true,
+  })
+
+  return ok({ ok: true })
+})
