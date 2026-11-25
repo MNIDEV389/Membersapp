@@ -29,22 +29,22 @@ export function CelebrationCard({
     const fire = myConfettiRef.current ?? confetti
 
     const rect = btnRef.current?.getBoundingClientRect()
-    const origin = rect
-      ? {
-          x: (rect.left + rect.width / 2) / window.innerWidth,
-          y: (rect.top + rect.height / 2) / window.innerHeight,
-        }
-      : { x: 0.5, y: 0.6 }
+    const isMobile = window.innerWidth < 640
+    const originY = rect
+      ? Math.min(0.75, Math.max(0.35, rect.top / window.innerHeight))
+      : 0.6
+    // Keep the Clap button in place, but center-align the confetti popper horizontally on screen
+    const origin = { x: 0.5, y: originY }
 
     const colors = ['#F59E0B', '#FFE066', '#215CE5', '#10B981', '#EC4899', '#0B224E']
 
     // Stage 1: Tight fast upward pop
     fire({
-      particleCount: 35,
-      spread: 60,
-      startVelocity: 38,
+      particleCount: isMobile ? 30 : 38,
+      spread: isMobile ? 55 : 65,
+      startVelocity: isMobile ? 32 : 38,
       decay: 0.91,
-      scalar: 0.95,
+      scalar: isMobile ? 0.85 : 0.95,
       ticks: 160,
       origin,
       colors,
@@ -53,13 +53,13 @@ export function CelebrationCard({
     // Stage 2: Wide shimmering confetti shower
     setTimeout(() => {
       fire({
-        particleCount: 55,
-        spread: 95,
-        startVelocity: 46,
+        particleCount: isMobile ? 42 : 55,
+        spread: isMobile ? 75 : 95,
+        startVelocity: isMobile ? 38 : 46,
         decay: 0.92,
-        scalar: 1.05,
+        scalar: isMobile ? 0.95 : 1.05,
         gravity: 0.95,
-        drift: 0.1,
+        drift: 0,
         ticks: 200,
         origin,
         colors,
