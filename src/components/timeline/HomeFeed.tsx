@@ -1,9 +1,8 @@
 'use client'
 
-import { ArrowRight, Calendar, Newspaper, Sparkles, Trophy, Users } from 'lucide-react'
+import { ArrowRight, Newspaper, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { Fragment, useMemo, useState } from 'react'
-import { TIMELINE_FILTERS } from '@/lib/constants'
 import { api } from '@/lib/client-api'
 import type { BannerVM, CelebrationVM, ID, PostSeenByMember, PostVM } from '@/lib/view-models'
 import { CelebrationModal } from '../modals/CelebrationModal'
@@ -15,7 +14,6 @@ import { EmptyState } from '../ui/Feedback'
 import { cn } from '../ui/cn'
 import { AdCarousel } from './AdCarousel'
 import { CelebrationCard } from './CelebrationCard'
-import { FilterChips } from './FilterChips'
 import { TimelineCard } from './TimelineCard'
 
 interface Props {
@@ -33,6 +31,18 @@ const greeting = () => {
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
 }
 
+const UNIFIED_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'need', label: 'Need' },
+  { id: 'give', label: 'Give' },
+  { id: 'wins', label: 'Wins' },
+  { id: 'announcements', label: 'Announcements' },
+  { id: 'meetups', label: 'Meetups' },
+  { id: 'spotlight', label: 'Spotlight' },
+] as const
+
+type UnifiedFilterId = (typeof UNIFIED_FILTERS)[number]['id']
+
 export function HomeFeed({
   firstName,
   myId,
@@ -44,8 +54,7 @@ export function HomeFeed({
 }: Props) {
   const [feedPosts, setFeedPosts] = useState<PostVM[]>(initialPosts)
   const [celebrations, setCelebrations] = useState<CelebrationVM[]>(initialCelebrations)
-  const [feedMode, setFeedMode] = useState<'all' | 'need' | 'give' | 'celebrations'>('all')
-  const [filter, setFilter] = useState('all')
+  const [activeFilter, setActiveFilter] = useState<UnifiedFilterId>('all')
   const [celebrateOpen, setCelebrateOpen] = useState(false)
   const [requested, setRequested] = useState(() => new Set(requestedMemberIds))
   const [infoPost, setInfoPost] = useState<PostVM | null>(null)
@@ -55,26 +64,24 @@ export function HomeFeed({
   const [seenByList, setSeenByList] = useState<PostSeenByMember[]>([])
   const [loadingSeenBy, setLoadingSeenBy] = useState(false)
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {}
-    for (const f of TIMELINE_FILTERS) {
-      c[f.id] = f.categories
-        ? feedPosts.filter((p) => f.categories!.includes(p.category)).length
-        : feedPosts.length
-    }
-    return c
-  }, [feedPosts])
+  const counts = useMemo<Record<UnifiedFilterId, number>>(() => ({
+    all: feedPosts.length,
+    need: feedPosts.filter((p) => p.category === 'Requirement').length,
+    give: feedPosts.filter((p) => p.category === 'Opportunity' || p.category === 'Promotion').length,
+    wins: celebrations.length,
+    announcements: feedPosts.filter((p) => p.category === 'Announcement').length,
+    meetups: feedPosts.filter((p) => p.category === 'Community Meetup').length,
+    spotlight: feedPosts.filter((p) => p.category === 'Member Spotlight').length,
+  }), [feedPosts, celebrations.length])
 
   const visible = useMemo(() => {
-    if (feedMode === 'need') {
-      return feedPosts.filter((p) => p.category === 'Requirement')
-    }
-    if (feedMode === 'give') {
-      return feedPosts.filter((p) => p.category === 'Opportunity' || p.category === 'Promotion')
-    }
-    const f = TIMELINE_FILTERS.find((x) => x.id === filter)
-    return f?.categories ? feedPosts.filter((p) => f.categories!.includes(p.category)) : feedPosts
-  }, [feedMode, filter, feedPosts])
+    if (activeFilter === 'need') return feedPosts.filter((p) => p.category === 'Requirement')
+    if (activeFilter === 'give') return feedPosts.filter((p) => p.category === 'Opportunity' || p.category === 'Promotion')
+    if (activeFilter === 'announcements') return feedPosts.filter((p) => p.category === 'Announcement')
+    if (activeFilter === 'meetups') return feedPosts.filter((p) => p.category === 'Community Meetup')
+    if (activeFilter === 'spotlight') return feedPosts.filter((p) => p.category === 'Member Spotlight')
+    return feedPosts
+  }, [activeFilter, feedPosts])
 
   const isRequested = (p: PostVM | null) => Boolean(p?.taggedMember && requested.has(String(p.taggedMember.id)))
   const isMine = (p: PostVM | null) => Boolean(p?.taggedMember && String(p.taggedMember.id) === String(myId))
@@ -155,47 +162,9 @@ export function HomeFeed({
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <p className="text-label text-muted">{greeting()},</p>
-          <h1 className="text-title font-bold text-navy">{firstName}</h1>
-        </div>
-        <button
-          type="button"
-          onClick={() => setCelebrateOpen(true)}
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#FFFBEB] px-3.5 text-[12.5px] font-bold text-[#92400E] ring-1 ring-inset ring-[#FDE68A] transition-all hover:bg-[#FEF3C7] active:scale-95"
-        >
-          <Trophy className="size-3.5 text-[#D97706]" aria-hidden="true" />
-          Celebrate Deal
-        </button>
-      </div>
-
-      {/* Quick Chapter Navigation Pills */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <Link
-          href="/directory"
-          className="flex items-center gap-2.5 rounded-2xl border border-black/[0.06] bg-surface px-3.5 py-2.5 shadow-sm transition-all hover:border-brand/30 hover:bg-pale/40 active:scale-[0.98]"
-        >
-          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-pale text-brand">
-            <Users className="size-4" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-label font-bold text-navy">Member Directory</p>
-            <p className="truncate text-[11px] text-muted">Search · City · Match</p>
-          </div>
-        </Link>
-        <Link
-          href="/meetups"
-          className="flex items-center gap-2.5 rounded-2xl border border-black/[0.06] bg-surface px-3.5 py-2.5 shadow-sm transition-all hover:border-brand/30 hover:bg-pale/40 active:scale-[0.98]"
-        >
-          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#ECFDF5] text-[#059669]">
-            <Calendar className="size-4" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-label font-bold text-navy">Meetups & 1-on-1</p>
-            <p className="truncate text-[11px] text-muted">RSVP · Coffee Connect</p>
-          </div>
-        </Link>
+      <div>
+        <p className="text-label text-muted">{greeting()},</p>
+        <h1 className="text-title font-bold text-navy">{firstName}</h1>
       </div>
 
       <AdCarousel banners={banners} />
@@ -208,44 +177,65 @@ export function HomeFeed({
           <p className="text-label text-muted">Opportunities and introductions curated by MNI.</p>
         </div>
 
-        {/* Need vs Give vs Celebrations Mode Bar */}
-        <div className="grid grid-cols-4 gap-1 rounded-2xl bg-[#EEF1F5] p-1">
-          {[
-            { id: 'all', label: 'All' },
-            { id: 'need', label: 'Need' },
-            { id: 'give', label: 'Give' },
-            { id: 'celebrations', label: `Wins (${celebrations.length})` },
-          ].map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setFeedMode(m.id as typeof feedMode)}
-              className={cn(
-                'h-8 rounded-xl text-[12.5px] font-semibold transition-all',
-                feedMode === m.id ? 'bg-white text-navy shadow-sm' : 'text-muted hover:text-navy',
-              )}
-            >
-              {m.label}
-            </button>
-          ))}
+        {/* Single Unified Apple Filter Strip (No stacked tabs) */}
+        <div role="tablist" aria-label="Filter timeline" className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+          {UNIFIED_FILTERS.map((f) => {
+            const selected = activeFilter === f.id
+            const count = counts[f.id]
+            return (
+              <button
+                key={f.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setActiveFilter(f.id)}
+                className={cn(
+                  'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-all',
+                  selected
+                    ? 'bg-navy text-white shadow-sm'
+                    : 'bg-surface text-muted ring-1 ring-inset ring-line hover:text-navy',
+                )}
+              >
+                <span>{f.label}</span>
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-[10.5px] font-bold leading-none',
+                      selected ? 'bg-white/20 text-white' : 'bg-subtle text-muted',
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
 
-        {feedMode === 'all' && feedPosts.length > 0 && (
-          <FilterChips value={filter} onChange={setFilter} counts={counts} />
-        )}
-
-        {feedMode === 'celebrations' ? (
-          celebrations.length === 0 ? (
-            <EmptyState icon={<Trophy className="size-5" aria-hidden="true" />} title="No closed business celebrations yet">
-              Be the first to share a deal or partnership closed through MNI!
-            </EmptyState>
-          ) : (
-            <div className="space-y-4">
-              {celebrations.map((c) => (
-                <CelebrationCard key={c.id} item={c} />
-              ))}
+        {activeFilter === 'wins' ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-label font-bold text-[#92400E]">Closed Business Wins</p>
+                <p className="text-caption text-[#92400E]/80">Share a deal closed via MNI (+50 pts)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCelebrateOpen(true)}
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-[#D97706] px-3.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#B45309] active:scale-95"
+              >
+                <Trophy className="size-3.5" aria-hidden="true" />
+                Share Win
+              </button>
             </div>
-          )
+            {celebrations.length === 0 ? (
+              <EmptyState icon={<Trophy className="size-5" aria-hidden="true" />} title="No closed business celebrations yet">
+                Be the first to share a deal or partnership closed through MNI!
+              </EmptyState>
+            ) : (
+              celebrations.map((c) => <CelebrationCard key={c.id} item={c} />)
+            )}
+          </div>
         ) : feedPosts.length === 0 ? (
           <EmptyState icon={<Newspaper className="size-5" aria-hidden="true" />} title="Nothing on the timeline yet">
             MNI will post opportunities, requirements and member spotlights here.
@@ -256,9 +246,7 @@ export function HomeFeed({
           </EmptyState>
         ) : (
           <div className="space-y-4">
-            {feedMode === 'all' && filter === 'all' && celebrations[0] && (
-              <CelebrationCard item={celebrations[0]} />
-            )}
+            {activeFilter === 'all' && celebrations[0] && <CelebrationCard item={celebrations[0]} />}
             {visible.map((post, i) => (
               <Fragment key={post.id}>
                 <TimelineCard

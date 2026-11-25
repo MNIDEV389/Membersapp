@@ -1,6 +1,6 @@
 'use client'
 
-import { Award, Briefcase, CalendarClock, Camera, ChevronRight, Compass, ExternalLink, HelpCircle, KeyRound, LogOut, Mail, MapPin, MessageCircle, PencilLine, Phone, QrCode, Sparkles, Target, Trophy } from 'lucide-react'
+import { Award, Briefcase, Calendar, CalendarClock, Camera, ChevronRight, Compass, ExternalLink, HelpCircle, KeyRound, LogOut, Mail, MapPin, MessageCircle, PencilLine, Phone, QrCode, Sparkles, Target, Trophy, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -246,6 +246,8 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
           <ChevronRight className="size-5 text-muted" aria-hidden="true" />
         </button>
         <PushNotificationToggle />
+        <MenuLink href="/directory" icon={<Users className="text-brand" />}>Member Directory</MenuLink>
+        <MenuLink href="/meetups" icon={<Calendar className="text-success" />}>Meetups &amp; 1-on-1 Coffee</MenuLink>
         <MenuLink href="/rewards" icon={<Trophy className="text-coin" />}>Leaderboard &amp; Active Points</MenuLink>
         <MenuLink href="/settings/password" icon={<KeyRound className="text-brand" />}>Change password</MenuLink>
         <MenuLink href="/login-help?reason=other" icon={<HelpCircle className="text-brand" />}>Help & account support</MenuLink>

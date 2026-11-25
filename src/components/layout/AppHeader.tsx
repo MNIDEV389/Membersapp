@@ -1,7 +1,8 @@
 'use client'
 
-import { Bell, CheckCheck, ChevronRight, FileText, Gift, UserRound, Users } from 'lucide-react'
+import { Bell, Calendar, CheckCheck, ChevronRight, FileText, Gift, UserRound, Users } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/client-api'
 import type { NotificationVM } from '@/lib/view-models'
@@ -15,6 +16,7 @@ import { timeAgo } from '@/lib/format'
 const kindIcon = { submission: FileText, contact: Users, referral: Gift, profile: UserRound }
 
 export function AppHeader({ initialUnread = 0 }: { initialUnread?: number }) {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [unread, setUnread] = useState(initialUnread)
   const [items, setItems] = useState<NotificationVM[] | null>(null)
@@ -58,17 +60,41 @@ export function AppHeader({ initialUnread = 0 }: { initialUnread?: number }) {
           <Link href="/" aria-label="MNI Members — Home" className="rounded-xl">
             <Wordmark />
           </Link>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="relative grid size-11 place-items-center rounded-full text-navy transition-colors hover:bg-navy/5"
-            aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-          >
-            <Bell className={cn("size-[22px] transition-colors", unread > 0 ? "fill-brand text-brand" : "text-navy")} aria-hidden="true" />
-            {unread > 0 && (
-              <span className="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand ring-2 ring-surface" aria-label="Unread notifications" />
-            )}
-          </button>
+          <div className="flex items-center gap-1">
+            <Link
+              href="/directory"
+              aria-label="Member Directory"
+              title="Member Directory"
+              className={cn(
+                'grid size-10 place-items-center rounded-full transition-colors',
+                pathname.startsWith('/directory') ? 'bg-pale text-brand' : 'text-navy hover:bg-navy/5',
+              )}
+            >
+              <Users className="size-[20px]" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/meetups"
+              aria-label="Meetups & 1-on-1"
+              title="Meetups & 1-on-1"
+              className={cn(
+                'grid size-10 place-items-center rounded-full transition-colors',
+                pathname.startsWith('/meetups') ? 'bg-pale text-brand' : 'text-navy hover:bg-navy/5',
+              )}
+            >
+              <Calendar className="size-[20px]" aria-hidden="true" />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="relative grid size-10 place-items-center rounded-full text-navy transition-colors hover:bg-navy/5"
+              aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+            >
+              <Bell className={cn("size-[20px] transition-colors", unread > 0 ? "fill-brand text-brand" : "text-navy")} aria-hidden="true" />
+              {unread > 0 && (
+                <span className="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-brand ring-2 ring-surface" aria-label="Unread notifications" />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
