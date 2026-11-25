@@ -136,6 +136,7 @@ export interface LeaderboardEntry {
   fullName: string
   businessName: string
   avatarInitials: string
+  avatarUrl?: string | null
   tier: MemberTier
   mniCoins: number
   referralCount: number
