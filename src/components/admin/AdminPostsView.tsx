@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, Heart, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
+import { Eye, Heart, Image as ImageIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { POST_CATEGORIES } from '@/lib/constants'
 import { api, ApiError } from '@/lib/client-api'
@@ -37,7 +37,9 @@ export function AdminPostsView({
   const toast = useToast()
   const [posts, setPosts] = useState<AdminPostRow[]>(initialPosts)
   const [createOpen, setCreateOpen] = useState(false)
+  const [editPost, setEditPost] = useState<AdminPostRow | null>(null)
   const [saving, setSaving] = useState(false)
+
   const [form, setForm] = useState({
     title: '',
     category: 'Announcement' as (typeof POST_CATEGORIES)[number],
@@ -46,6 +48,14 @@ export function AdminPostsView({
     taggedMemberId: '',
     status: 'published' as 'draft' | 'published',
     displayOrder: '50',
+  })
+
+  const [editForm, setEditForm] = useState({
+    title: '',
+    category: 'Announcement' as (typeof POST_CATEGORIES)[number],
+    content: '',
+    imageUrl: null as string | null,
+    taggedMemberId: '',
   })
 
   const createPost = async () => {
@@ -103,6 +113,61 @@ export function AdminPostsView({
     }
   }
 
+  const openEdit = (p: AdminPostRow) => {
+    setEditPost(p)
+    setEditForm({
+      title: p.title,
+      category: p.category,
+      content: p.content ?? '',
+      imageUrl: p.imageUrl,
+      taggedMemberId: p.taggedMemberId ? String(p.taggedMemberId) : '',
+    })
+  }
+
+  const saveEdit = async () => {
+    if (!editPost) return
+    if (!editForm.title.trim()) {
+      toast('Enter a post title', 'error')
+      return
+    }
+    setSaving(true)
+    try {
+      await api('/api/admin/posts', {
+        method: 'PATCH',
+        body: {
+          id: editPost.id,
+          title: editForm.title.trim(),
+          category: editForm.category,
+          content: editForm.content.trim() || null,
+          imageUrl: editForm.imageUrl || null,
+          taggedMemberId: editForm.taggedMemberId ? Number(editForm.taggedMemberId) : null,
+        },
+      })
+      const m = members.find((x) => String(x.id) === editForm.taggedMemberId)
+      setPosts((prev) =>
+        prev.map((x) =>
+          x.id === editPost.id
+            ? {
+                ...x,
+                title: editForm.title.trim(),
+                category: editForm.category,
+                content: editForm.content.trim() || null,
+                imageUrl: editForm.imageUrl,
+                taggedMemberName: m ? m.fullName : null,
+                taggedMemberId: m ? m.id : null,
+              }
+            : x,
+        ),
+      )
+      toast('Post updated successfully!')
+      setEditPost(null)
+    } catch (err) {
+      toast((err as ApiError).message || 'Failed to update post', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const toggleStatus = async (p: AdminPostRow) => {
     const next = p.status === 'published' ? 'draft' : 'published'
     try {
@@ -129,7 +194,7 @@ export function AdminPostsView({
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-[24px] font-bold tracking-tight text-navy">Posts &amp; Feed ({posts.length})</h1>
-          <p className="text-label text-muted">Publish announcements, member spotlights, and monitor likes/views.</p>
+          <p className="text-label text-muted">Publish, edit, and monitor announcements, opportunities, and spotlights.</p>
         </div>
         <Button onClick={() => setCreateOpen(true)} icon={<Plus className="size-4" />}>
           Create Post
@@ -180,11 +245,20 @@ export function AdminPostsView({
                   <Button size="sm" variant="secondary" onClick={() => toggleStatus(p)}>
                     {p.status === 'published' ? 'Unpublish' : 'Publish'}
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => openEdit(p)}
+                    icon={<Pencil className="size-3.5" />}
+                  >
+                    Edit
+                  </Button>
                   <button
                     type="button"
                     onClick={() => removePost(p.id)}
                     className="grid size-8 place-items-center rounded-full text-danger hover:bg-danger-bg"
                     aria-label="Delete post"
+                    title="Delete post"
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -207,6 +281,7 @@ export function AdminPostsView({
         </div>
       )}
 
+      {/* Create Post Modal */}
       <Dialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
@@ -266,6 +341,70 @@ export function AdminPostsView({
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
               placeholder="Write the announcement or opportunity details…"
+            />
+          </Field>
+        </div>
+      </Dialog>
+
+      {/* Edit Post Modal */}
+      <Dialog
+        open={Boolean(editPost)}
+        onClose={() => setEditPost(null)}
+        busy={saving}
+        title="Edit Timeline Post"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditPost(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={saveEdit} loading={saving}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Field label="Title">
+            <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Category">
+              <Select
+                value={editForm.category}
+                onChange={(e) => setEditForm({ ...editForm, category: e.target.value as (typeof POST_CATEGORIES)[number] })}
+              >
+                {POST_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Tag Member" optional>
+              <Select value={editForm.taggedMemberId} onChange={(e) => setEditForm({ ...editForm, taggedMemberId: e.target.value })}>
+                <option value="">MNI Admin (Network Bulletin)</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.fullName} — {m.businessName}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <AdminImagePicker
+            label="Post Cover Image (Upload or URL)"
+            value={editForm.imageUrl}
+            onChange={(url) => setEditForm({ ...editForm, imageUrl: url })}
+            aspect="video"
+            helperText="Update cover photo or enter an image link."
+          />
+
+          <Field label="Content">
+            <Textarea
+              rows={4}
+              value={editForm.content}
+              onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
             />
           </Field>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowUpRight, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
+import { ArrowUpRight, Image as ImageIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { BANNER_CATEGORIES } from '@/lib/constants'
 import { api, ApiError } from '@/lib/client-api'
@@ -27,7 +27,9 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
   const toast = useToast()
   const [banners, setBanners] = useState<AdminBannerRow[]>(initialBanners)
   const [open, setOpen] = useState(false)
+  const [editBanner, setEditBanner] = useState<AdminBannerRow | null>(null)
   const [saving, setSaving] = useState(false)
+
   const [form, setForm] = useState({
     title: '',
     subtitle: '',
@@ -35,6 +37,15 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
     imageUrl: null as string | null,
     actionLabel: 'Explore',
     actionLink: '/meetups',
+  })
+
+  const [editForm, setEditForm] = useState({
+    title: '',
+    subtitle: '',
+    category: BANNER_CATEGORIES[0] as string,
+    imageUrl: null as string | null,
+    actionLabel: 'Explore',
+    actionLink: '',
   })
 
   const createBanner = async () => {
@@ -73,6 +84,62 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
       })
     } catch (err) {
       toast((err as ApiError).message || 'Failed to create banner', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const openEdit = (b: AdminBannerRow) => {
+    setEditBanner(b)
+    setEditForm({
+      title: b.title,
+      subtitle: b.subtitle,
+      category: b.category,
+      imageUrl: b.imageUrl,
+      actionLabel: b.actionLabel,
+      actionLink: b.actionLink ?? '',
+    })
+  }
+
+  const saveEdit = async () => {
+    if (!editBanner) return
+    if (!editForm.title.trim() || !editForm.subtitle.trim()) {
+      toast('Enter banner title and subtitle', 'error')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await api<{ ok: boolean; banner: AdminBannerRow }>('/api/admin/banners', {
+        method: 'PATCH',
+        body: {
+          id: editBanner.id,
+          title: editForm.title.trim(),
+          subtitle: editForm.subtitle.trim(),
+          category: editForm.category.trim(),
+          imageUrl: editForm.imageUrl || null,
+          actionLabel: editForm.actionLabel.trim() || 'Learn more',
+          actionLink: editForm.actionLink?.trim() || null,
+        },
+      })
+      setBanners((prev) =>
+        prev.map((x) =>
+          x.id === editBanner.id
+            ? {
+                ...x,
+                title: editForm.title.trim(),
+                subtitle: editForm.subtitle.trim(),
+                category: editForm.category.trim(),
+                imageUrl: editForm.imageUrl,
+                actionLabel: editForm.actionLabel.trim() || 'Learn more',
+                actionLink: editForm.actionLink?.trim() || null,
+              }
+            : x,
+        ),
+      )
+      toast('Banner updated successfully!')
+      setEditBanner(null)
+    } catch (err) {
+      toast((err as ApiError).message || 'Failed to update banner', 'error')
     } finally {
       setSaving(false)
     }
@@ -168,11 +235,20 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
                   <Button size="sm" variant="secondary" onClick={() => toggleActive(b)}>
                     {b.isActive ? 'Pause' : 'Activate'}
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => openEdit(b)}
+                    icon={<Pencil className="size-3.5" />}
+                  >
+                    Edit
+                  </Button>
                   <button
                     type="button"
                     onClick={() => removeBanner(b.id)}
                     className="grid size-8 place-items-center rounded-full text-danger hover:bg-danger-bg"
                     aria-label="Delete banner"
+                    title="Delete banner"
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -183,6 +259,7 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
         </div>
       )}
 
+      {/* Create Banner Modal */}
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
@@ -241,6 +318,68 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
               value={form.actionLink}
               onChange={(e) => setForm({ ...form, actionLink: e.target.value })}
               placeholder="e.g. /meetups, /rewards, or https://..."
+            />
+          </Field>
+        </div>
+      </Dialog>
+
+      {/* Edit Banner Modal */}
+      <Dialog
+        open={Boolean(editBanner)}
+        onClose={() => setEditBanner(null)}
+        busy={saving}
+        title="Edit Carousel Banner"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditBanner(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={saveEdit} loading={saving}>
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Field label="Banner Title">
+            <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+          </Field>
+          <Field label="Subtitle">
+            <Input
+              value={editForm.subtitle}
+              onChange={(e) => setEditForm({ ...editForm, subtitle: e.target.value })}
+            />
+          </Field>
+
+          <AdminImagePicker
+            label="Banner Background Image (Upload or URL)"
+            value={editForm.imageUrl}
+            onChange={(url) => setEditForm({ ...editForm, imageUrl: url })}
+            aspect="banner"
+            helperText="Upload a crisp landscape photo or enter an image link. Overlay and gradients are applied automatically."
+          />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Category / Tag">
+              <Select
+                value={editForm.category}
+                onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+              >
+                {BANNER_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Action Label">
+              <Input value={editForm.actionLabel} onChange={(e) => setEditForm({ ...editForm, actionLabel: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Action Link" optional>
+            <Input
+              value={editForm.actionLink}
+              onChange={(e) => setEditForm({ ...editForm, actionLink: e.target.value })}
             />
           </Field>
         </div>
