@@ -23,9 +23,21 @@ const patchMemberSchema = z.object({
   accountStatus: z.enum(['active', 'suspended']).optional(),
   fullName: z.string().trim().min(2).max(120).optional(),
   phone: z.string().trim().min(5).max(30).optional(),
+  whatsapp: z.string().trim().max(30).optional().nullable(),
   city: z.string().trim().min(2).max(80).optional(),
   businessName: z.string().trim().min(2).max(120).optional(),
   businessCategory: z.string().trim().min(2).max(80).optional(),
+  websiteUrl: z.string().trim().max(250).optional().nullable(),
+  whatWeDo: z.string().trim().max(2000).optional().nullable(),
+  bio: z.string().trim().max(2000).optional().nullable(),
+  keyProductService: z.string().trim().max(1000).optional().nullable(),
+  idealClient: z.string().trim().max(800).optional().nullable(),
+  opportunityLookingFor: z.string().trim().max(800).optional().nullable(),
+  targetConnections: z.string().trim().max(500).optional().nullable(),
+  preferredCallDay: z.string().trim().max(50).optional().nullable(),
+  preferredCallTime: z.string().trim().max(80).optional().nullable(),
+  additionalNotes: z.string().trim().max(800).optional().nullable(),
+  mniCoins: z.number().min(0).optional(),
   avatarUrl: z.string().trim().optional().nullable(),
   password: z.string().min(8).max(100).optional(),
 })
@@ -82,6 +94,11 @@ export const PATCH = handler(async (req) => {
   const { payload } = await requireApiAdmin(req)
   const data = await parseJson(req, patchMemberSchema)
   const { id, avatarUrl, ...updates } = data
+
+  // Keep bio and whatWeDo in sync
+  if (updates.whatWeDo !== undefined && updates.bio === undefined) {
+    updates.bio = updates.whatWeDo
+  }
 
   const updated = await payload.update({
     collection: 'members',
