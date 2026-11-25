@@ -1,6 +1,6 @@
 'use client'
 
-import { Award, Briefcase, CalendarClock, Camera, ChevronRight, Compass, ExternalLink, HelpCircle, KeyRound, LogOut, Mail, MapPin, MessageCircle, PencilLine, Phone, Sparkles, Target, Trophy } from 'lucide-react'
+import { Award, Briefcase, CalendarClock, Camera, ChevronRight, Compass, ExternalLink, HelpCircle, KeyRound, LogOut, Mail, MapPin, MessageCircle, PencilLine, Phone, QrCode, Sparkles, Target, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
@@ -13,7 +13,9 @@ import { Dialog } from '../ui/Dialog'
 import { Alert } from '../ui/Feedback'
 import { SegmentedTabs, TabPanel } from '../ui/Tabs'
 import { useToast } from '../ui/Toast'
+import { DigitalCardModal } from './DigitalCardModal'
 import { EditProfileDialog } from './EditProfileDialog'
+import { PushNotificationToggle } from './PushNotificationToggle'
 
 type TabId = 'about' | 'networking' | 'account'
 type Pending = { id: number | string; status: string; adminFeedback: string | null; createdAt: string; changes: Record<string, string> } | null
@@ -23,6 +25,7 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
   const toast = useToast()
   const [tab, setTab] = useState<TabId>('about')
   const [editing, setEditing] = useState(false)
+  const [cardOpen, setCardOpen] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [withdrawing, setWithdrawing] = useState(false)
@@ -231,7 +234,19 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
       </TabPanel>
 
       <nav aria-label="More" className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-card">
-        <MenuLink href="/rewards" icon={<Trophy className="text-coin" />}>Rewards & leaderboard</MenuLink>
+        <button
+          type="button"
+          onClick={() => setCardOpen(true)}
+          className="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-left text-body font-semibold text-navy hover:bg-subtle"
+        >
+          <span className="flex items-center gap-3">
+            <QrCode className="size-5 text-brand" aria-hidden="true" />
+            Digital Business Card (QR)
+          </span>
+          <ChevronRight className="size-5 text-muted" aria-hidden="true" />
+        </button>
+        <PushNotificationToggle />
+        <MenuLink href="/rewards" icon={<Trophy className="text-coin" />}>Leaderboard &amp; Active Points</MenuLink>
         <MenuLink href="/settings/password" icon={<KeyRound className="text-brand" />}>Change password</MenuLink>
         <MenuLink href="/login-help?reason=other" icon={<HelpCircle className="text-brand" />}>Help & account support</MenuLink>
         <button type="button" onClick={() => setConfirmLogout(true)} className="flex min-h-14 w-full items-center gap-3 px-4 text-left text-body font-semibold text-danger hover:bg-danger-bg/50">
@@ -240,6 +255,13 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
         </button>
       </nav>
       <p className="pb-2 text-center text-caption text-muted">To change your email or login details, contact MNI support.</p>
+
+      <DigitalCardModal
+        open={cardOpen}
+        onClose={() => setCardOpen(false)}
+        profile={profile}
+        avatarUrl={avatarUrl}
+      />
 
       <EditProfileDialog
         open={editing}

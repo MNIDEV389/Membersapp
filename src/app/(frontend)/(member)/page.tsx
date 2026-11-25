@@ -1,13 +1,16 @@
 import type { Metadata } from 'next'
 import { requireMember } from '@/lib/auth'
-import { getTimeline } from '@/lib/data'
+import { getCelebrations, getTimeline } from '@/lib/data'
 import { HomeFeed } from '@/components/timeline/HomeFeed'
 
 export const metadata: Metadata = { title: 'Home' }
 
 export default async function HomePage() {
   const me = await requireMember()
-  const { posts, banners, requestedMemberIds } = await getTimeline(me)
+  const [{ posts, banners, requestedMemberIds }, { celebrations, membersForPicker }] = await Promise.all([
+    getTimeline(me),
+    getCelebrations(),
+  ])
   const firstName = me.fullName.split(' ')[0]
 
   return (
@@ -17,6 +20,8 @@ export default async function HomePage() {
       posts={posts}
       banners={banners}
       requestedMemberIds={requestedMemberIds.map(String)}
+      celebrations={celebrations}
+      membersForPicker={membersForPicker}
     />
   )
 }

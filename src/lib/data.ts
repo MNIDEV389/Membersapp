@@ -7,10 +7,20 @@ import {
   toBanner,
   toContactRequest,
   toPost,
+  toPublicMember,
   toReferral,
   toSubmission,
 } from './serializers'
-import type { LeaderboardEntry, NotificationVM, PostSeenByMember } from './view-models'
+import type {
+  CelebrationVM,
+  CoffeeConnectVM,
+  DirectoryMemberVM,
+  LeaderboardEntry,
+  MeetupVM,
+  NotificationVM,
+  PostSeenByMember,
+  PublicMember,
+} from './view-models'
 
 type Me = Member & { collection: 'members' }
 
@@ -211,28 +221,53 @@ export async function getMyReferrals(me: Me) {
 }
 
 export async function getLeaderboard(me: Me, limit = 20) {
+  const pool = getPgPool()
   const payload = await getPayloadClient()
-  const res = await payload.find({
-    collection: 'members',
-    where: { accountStatus: { not_equals: 'suspended' } },
-    overrideAccess: true,
-    sort: ['-mniCoins', 'fullName'],
-    limit,
-    depth: 0,
-    select: { fullName: true, businessName: true, avatarInitials: true, tier: true, mniCoins: true, referralCount: true },
+  const [res, ptsRes] = await Promise.all([
+    payload.find({
+      collection: 'members',
+      where: { accountStatus: { not_equals: 'suspended' } },
+      overrideAccess: true,
+      sort: ['-mniCoins', 'fullName'],
+      limit,
+      depth: 0,
+      select: { fullName: true, businessName: true, avatarInitials: true, tier: true, mniCoins: true, referralCount: true },
+    }),
+    pool.query(
+      `SELECT m.id, m.custom_avatar, COALESCE(SUM(p.points), 0)::int AS activity_points
+       FROM members m
+       LEFT JOIN member_activity_points p ON p.member_id = m.id
+       GROUP BY m.id, m.custom_avatar`,
+    ),
+  ])
+
+  const extraMap = new Map<number, { avatarUrl: string | null; activityPoints: number }>()
+  for (const r of ptsRes.rows) {
+    extraMap.set(Number(r.id), {
+      avatarUrl: r.custom_avatar ?? null,
+      activityPoints: Number(r.activity_points ?? 0),
+    })
+  }
+
+  const entries = res.docs.map((m) => {
+    const extra = extraMap.get(m.id)
+    const totalPoints = (m.mniCoins ?? 0) + (extra?.activityPoints ?? 0)
+    return {
+      rank: 0,
+      id: m.id,
+      fullName: m.fullName,
+      businessName: m.businessName,
+      avatarInitials: m.avatarInitials || m.fullName.slice(0, 2).toUpperCase(),
+      avatarUrl: extra?.avatarUrl ?? null,
+      tier: (m.tier ?? 'freemium') as LeaderboardEntry['tier'],
+      mniCoins: totalPoints,
+      referralCount: m.referralCount ?? 0,
+      isYou: m.id === me.id,
+    }
   })
-  return res.docs.map<LeaderboardEntry>((m, i) => ({
-    rank: i + 1,
-    id: m.id,
-    fullName: m.fullName,
-    businessName: m.businessName,
-    avatarInitials: m.avatarInitials || m.fullName.slice(0, 2).toUpperCase(),
-    avatarUrl: ((m as any).custom_avatar || (m as any).customAvatar) ?? null,
-    tier: (m.tier ?? 'freemium') as LeaderboardEntry['tier'],
-    mniCoins: m.mniCoins ?? 0,
-    referralCount: m.referralCount ?? 0,
-    isYou: m.id === me.id,
-  }))
+
+  entries.sort((a, b) => b.mniCoins - a.mniCoins || a.fullName.localeCompare(b.fullName))
+  return entries.map((e, i) => ({ ...e, rank: i + 1 }))
 }
 
 /** Competition rank ("1224" style): members with strictly more coins + 1. */
@@ -341,4 +376,231 @@ export async function getNotifications(me: Me): Promise<{ items: NotificationVM[
   items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
   const top = items.slice(0, 30)
   return { items: top, unreadCount: top.filter((i) => i.unread).length }
+}
+
+/** Closed Business Celebrations for the Feed & Engagement showcase. */
+export async function getCelebrations(): Promise<{
+  celebrations: CelebrationVM[]
+  membersForPicker: { id: number; fullName: string; businessName: string }[]
+}> {
+  const pool = getPgPool()
+  const [celRes, memRes] = await Promise.all([
+    pool.query(
+      `SELECT c.id, c.amount_label, c.story, c.created_at,
+              f.id AS f_id, f.full_name AS f_name, f.avatar_initials AS f_init, f.custom_avatar AS f_av, f.business_name AS f_biz,
+              t.id AS t_id, t.full_name AS t_name, t.avatar_initials AS t_init, t.custom_avatar AS t_av, t.business_name AS t_biz
+       FROM closed_business_celebrations c
+       JOIN members f ON f.id = c.from_member_id
+       JOIN members t ON t.id = c.to_member_id
+       ORDER BY c.created_at DESC
+       LIMIT 30`,
+    ),
+    pool.query(
+      `SELECT id, full_name, business_name FROM members WHERE account_status IS DISTINCT FROM 'suspended' ORDER BY full_name ASC`,
+    ),
+  ])
+
+  return {
+    celebrations: celRes.rows.map((r) => ({
+      id: r.id,
+      amountLabel: r.amount_label,
+      story: r.story,
+      createdAt: new Date(r.created_at).toISOString(),
+      fromMember: {
+        id: r.f_id,
+        fullName: r.f_name,
+        avatarInitials: r.f_init || r.f_name.slice(0, 2).toUpperCase(),
+        avatarUrl: r.f_av || null,
+        businessName: r.f_biz,
+      },
+      toMember: {
+        id: r.t_id,
+        fullName: r.t_name,
+        avatarInitials: r.t_init || r.t_name.slice(0, 2).toUpperCase(),
+        avatarUrl: r.t_av || null,
+        businessName: r.t_biz,
+      },
+    })),
+    membersForPicker: memRes.rows.map((m) => ({
+      id: Number(m.id),
+      fullName: m.full_name,
+      businessName: m.business_name,
+    })),
+  }
+}
+
+/** Full searchable Member Directory with Ideal Client Matchmaking & request status. */
+export async function getDirectoryMembers(me: Me): Promise<DirectoryMemberVM[]> {
+  const payload = await getPayloadClient()
+  const [membersRes, myRequests] = await Promise.all([
+    payload.find({
+      collection: 'members',
+      where: { accountStatus: { not_equals: 'suspended' } },
+      overrideAccess: true,
+      sort: 'fullName',
+      limit: 200,
+      depth: 1,
+    }),
+    payload.find({
+      collection: 'contact-requests',
+      user: me,
+      overrideAccess: false,
+      where: { status: { not_equals: 'declined' } },
+      limit: 200,
+      depth: 0,
+    }),
+  ])
+
+  const requestedIds = new Set(
+    myRequests.docs.map((r) => String(typeof r.targetMember === 'object' ? r.targetMember.id : r.targetMember)),
+  )
+
+  const myKeywords = [
+    me.businessCategory,
+    me.whatWeDo,
+    me.keyProductService,
+    me.idealClient,
+    me.opportunityLookingFor,
+    me.targetConnections,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 4)
+
+  const myKeywordSet = new Set(myKeywords)
+
+  return membersRes.docs.map((doc) => {
+    const pub = toPublicMember(doc)
+    const targetText = [pub.idealClient, pub.opportunityLookingFor, pub.targetConnections, pub.businessCategory]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    let matchReason: string | null = null
+    if (doc.id !== me.id) {
+      if (pub.city && me.city && pub.city.toLowerCase() === me.city.toLowerCase()) {
+        matchReason = `Same chapter (${pub.city})`
+      }
+      const matchedWord = [...myKeywordSet].find((w) => targetText.includes(w))
+      if (matchedWord) {
+        matchReason = `Matches "${matchedWord}" in ideal client / needs`
+      }
+    }
+
+    return {
+      ...pub,
+      isMatch: Boolean(matchReason),
+      matchReason,
+      isRequested: requestedIds.has(String(doc.id)),
+      isMine: doc.id === me.id,
+    }
+  })
+}
+
+/** Chapter Meetups with RSVP status + 1-on-1 Coffee Connects. */
+export async function getMeetupsAndConnects(me: Me): Promise<{
+  meetups: MeetupVM[]
+  connects: CoffeeConnectVM[]
+  members: PublicMember[]
+}> {
+  const pool = getPgPool()
+  const payload = await getPayloadClient()
+
+  const [meetupsRes, rsvpsRes, connectsRes, membersRes] = await Promise.all([
+    pool.query(`SELECT id, title, description, city, venue, starts_at, host_name FROM meetups ORDER BY starts_at ASC`),
+    pool.query(
+      `SELECT r.meetup_id, m.id, m.full_name, m.avatar_initials, m.custom_avatar, m.business_name, m.city
+       FROM meetup_rsvps r
+       JOIN members m ON m.id = r.member_id
+       ORDER BY r.created_at DESC`,
+    ),
+    pool.query(
+      `SELECT c.id, c.requester_id, c.target_member_id, c.proposed_time, c.note, c.status, c.created_at,
+              req.full_name AS req_name, req.avatar_initials AS req_init, req.custom_avatar AS req_av, req.business_name AS req_biz, req.city AS req_city,
+              tgt.full_name AS tgt_name, tgt.avatar_initials AS tgt_init, tgt.custom_avatar AS tgt_av, tgt.business_name AS tgt_biz, tgt.city AS tgt_city
+       FROM coffee_connects c
+       JOIN members req ON req.id = c.requester_id
+       JOIN members tgt ON tgt.id = c.target_member_id
+       WHERE c.requester_id = $1 OR c.target_member_id = $1
+       ORDER BY c.created_at DESC
+       LIMIT 30`,
+      [me.id],
+    ),
+    payload.find({
+      collection: 'members',
+      where: { and: [{ id: { not_equals: me.id } }, { accountStatus: { not_equals: 'suspended' } }] },
+      overrideAccess: true,
+      sort: 'fullName',
+      limit: 100,
+      depth: 1,
+    }),
+  ])
+
+  const attendeesByMeetup = new Map<number, MeetupVM['attendees']>()
+  for (const r of rsvpsRes.rows) {
+    const mid = Number(r.meetup_id)
+    const list = attendeesByMeetup.get(mid) ?? []
+    list.push({
+      id: r.id,
+      fullName: r.full_name,
+      avatarInitials: r.avatar_initials || r.full_name.slice(0, 2).toUpperCase(),
+      avatarUrl: r.custom_avatar || null,
+      businessName: r.business_name,
+      city: r.city,
+    })
+    attendeesByMeetup.set(mid, list)
+  }
+
+  const meetups: MeetupVM[] = meetupsRes.rows.map((m) => {
+    const attendees = attendeesByMeetup.get(Number(m.id)) ?? []
+    return {
+      id: m.id,
+      title: m.title,
+      description: m.description,
+      city: m.city,
+      venue: m.venue,
+      startsAt: new Date(m.starts_at).toISOString(),
+      hostName: m.host_name,
+      isGoing: attendees.some((a) => Number(a.id) === me.id),
+      attendeesCount: attendees.length,
+      attendees,
+    }
+  })
+
+  const connects: CoffeeConnectVM[] = connectsRes.rows.map((c) => {
+    const isOutgoing = Number(c.requester_id) === me.id
+    return {
+      id: c.id,
+      direction: isOutgoing ? 'outgoing' : 'incoming',
+      otherMember: isOutgoing
+        ? {
+            id: c.target_member_id,
+            fullName: c.tgt_name,
+            avatarInitials: c.tgt_init || c.tgt_name.slice(0, 2).toUpperCase(),
+            avatarUrl: c.tgt_av || null,
+            businessName: c.tgt_biz,
+            city: c.tgt_city,
+          }
+        : {
+            id: c.requester_id,
+            fullName: c.req_name,
+            avatarInitials: c.req_init || c.req_name.slice(0, 2).toUpperCase(),
+            avatarUrl: c.req_av || null,
+            businessName: c.req_biz,
+            city: c.req_city,
+          },
+      proposedTime: c.proposed_time,
+      note: c.note,
+      status: c.status,
+      createdAt: new Date(c.created_at).toISOString(),
+    }
+  })
+
+  return {
+    meetups,
+    connects,
+    members: membersRes.docs.map(toPublicMember),
+  }
 }

@@ -152,3 +152,70 @@ export interface NotificationVM {
   at: string
   unread: boolean
 }
+
+export interface CelebrationVM {
+  id: ID
+  fromMember: {
+    id: ID
+    fullName: string
+    avatarInitials: string
+    avatarUrl: string | null
+    businessName: string
+  }
+  toMember: {
+    id: ID
+    fullName: string
+    avatarInitials: string
+    avatarUrl: string | null
+    businessName: string
+  }
+  amountLabel: string
+  story: string
+  createdAt: string
+}
+
+export interface MeetupAttendeeVM {
+  id: ID
+  fullName: string
+  avatarInitials: string
+  avatarUrl: string | null
+  businessName: string
+  city: string
+}
+
+export interface MeetupVM {
+  id: ID
+  title: string
+  description: string | null
+  city: string
+  venue: string
+  startsAt: string
+  hostName: string | null
+  isGoing: boolean
+  attendeesCount: number
+  attendees: MeetupAttendeeVM[]
+}
+
+export interface CoffeeConnectVM {
+  id: ID
+  direction: 'incoming' | 'outgoing'
+  otherMember: {
+    id: ID
+    fullName: string
+    avatarInitials: string
+    avatarUrl: string | null
+    businessName: string
+    city: string
+  }
+  proposedTime: string
+  note: string | null
+  status: 'pending' | 'accepted' | 'declined'
+  createdAt: string
+}
+
+export interface DirectoryMemberVM extends PublicMember {
+  isMatch: boolean
+  matchReason: string | null
+  isRequested: boolean
+  isMine: boolean
+}

@@ -73,6 +73,42 @@ export default async function RewardsPage() {
         </div>
       </section>
 
+      {/* Monthly Top Referrer Spotlight */}
+      {top1 && (
+        <section
+          aria-label="Monthly Top Referrer Spotlight"
+          className="relative overflow-hidden rounded-[22px] border border-[#FDE68A] bg-gradient-to-r from-[#FFFDF5] via-[#FFFBEB] to-[#FEF3C7] p-4 shadow-sm"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative">
+                <Avatar initials={top1.avatarInitials} src={top1.avatarUrl} size="md" />
+                <span className="absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full bg-[#F59E0B] text-[10px] font-bold text-white shadow">
+                  ★
+                </span>
+              </div>
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold uppercase tracking-wider text-[#B45309]">
+                  <Trophy className="size-3" />
+                  Monthly Top Referrer Spotlight
+                </span>
+                <p className="truncate text-[16px] font-bold text-navy">{top1.fullName}</p>
+                <p className="truncate text-caption text-[#78350F]/80">
+                  {top1.businessName} · {top1.referralCount} referrals
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[11px] font-bold uppercase text-[#B45309]">Active Pts</p>
+              <p className="text-[18px] font-extrabold text-[#92400E]">{formatNumber(top1.mniCoins)}</p>
+            </div>
+          </div>
+          <p className="mt-2.5 border-t border-[#FDE68A]/80 pt-2 text-[11.5px] font-medium text-[#92400E]">
+            Earn Active Contributor Points: +500 Confirmed Referral · +50 Closed Deal · +30 Meetup RSVP / 1-on-1
+          </p>
+        </section>
+      )}
+
       {/* Top 3 Podium Highlights */}
       {leaderboard.length >= 3 && (
         <section aria-label="Top 3 members" className="space-y-3">

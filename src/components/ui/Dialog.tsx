@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { cn } from './cn'
 
@@ -28,6 +28,12 @@ export function Dialog({ open, onClose, title, description, children, footer, fo
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const descId = useId()
+  const touchStartY = useRef<number | null>(null)
+  const [dragY, setDragY] = useState(0)
+
+  useEffect(() => {
+    if (!open) setDragY(0)
+  }, [open])
 
   useEffect(() => {
     const el = ref.current
@@ -67,7 +73,32 @@ export function Dialog({ open, onClose, title, description, children, footer, fo
       )}
     >
       {open && (
-        <div className="flex max-h-[92dvh] flex-col overflow-hidden rounded-t-[var(--radius-panel)] bg-surface shadow-raised sm:rounded-[var(--radius-panel)]">
+        <div
+          style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
+          onTouchStart={(e) => {
+            if (busy) return
+            touchStartY.current = e.touches[0].clientY
+          }}
+          onTouchMove={(e) => {
+            if (touchStartY.current === null || busy) return
+            const delta = e.touches[0].clientY - touchStartY.current
+            if (delta > 0) setDragY(delta)
+          }}
+          onTouchEnd={() => {
+            if (dragY > 90 && !busy) {
+              setDragY(0)
+              onClose()
+            } else {
+              setDragY(0)
+            }
+            touchStartY.current = null
+          }}
+          className="flex max-h-[92dvh] flex-col overflow-hidden rounded-t-[var(--radius-panel)] bg-surface shadow-raised transition-transform duration-150 sm:rounded-[var(--radius-panel)]"
+        >
+          {/* Apple iOS Bottom Sheet Grabber Handle (mobile only) */}
+          <div className="flex justify-center pt-2 sm:hidden" aria-hidden="true">
+            <span className="h-1 w-10 rounded-full bg-black/15" />
+          </div>
           {header ?? (
             <div className="flex items-start justify-between gap-4 border-b border-line px-5 pb-4 pt-5 sm:px-6">
               <div className="min-w-0 space-y-1">

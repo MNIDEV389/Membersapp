@@ -1,17 +1,20 @@
 'use client'
 
-import { ArrowRight, Newspaper } from 'lucide-react'
+import { ArrowRight, Calendar, Newspaper, Sparkles, Trophy, Users } from 'lucide-react'
 import Link from 'next/link'
 import { Fragment, useMemo, useState } from 'react'
 import { TIMELINE_FILTERS } from '@/lib/constants'
 import { api } from '@/lib/client-api'
-import type { BannerVM, ID, PostSeenByMember, PostVM } from '@/lib/view-models'
+import type { BannerVM, CelebrationVM, ID, PostSeenByMember, PostVM } from '@/lib/view-models'
+import { CelebrationModal } from '../modals/CelebrationModal'
 import { ContactRequestDialog } from '../modals/ContactRequestDialog'
 import { MemberInfoDialog } from '../modals/MemberInfoDialog'
 import { PostDetailModal } from '../modals/PostDetailModal'
 import { SeenByDialog } from '../modals/SeenByDialog'
 import { EmptyState } from '../ui/Feedback'
+import { cn } from '../ui/cn'
 import { AdCarousel } from './AdCarousel'
+import { CelebrationCard } from './CelebrationCard'
 import { FilterChips } from './FilterChips'
 import { TimelineCard } from './TimelineCard'
 
@@ -21,6 +24,8 @@ interface Props {
   posts: PostVM[]
   banners: BannerVM[]
   requestedMemberIds: string[]
+  celebrations?: CelebrationVM[]
+  membersForPicker?: { id: number; fullName: string; businessName: string }[]
 }
 
 const greeting = () => {
@@ -28,9 +33,20 @@ const greeting = () => {
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
 }
 
-export function HomeFeed({ firstName, myId, posts: initialPosts, banners, requestedMemberIds }: Props) {
+export function HomeFeed({
+  firstName,
+  myId,
+  posts: initialPosts,
+  banners,
+  requestedMemberIds,
+  celebrations: initialCelebrations = [],
+  membersForPicker = [],
+}: Props) {
   const [feedPosts, setFeedPosts] = useState<PostVM[]>(initialPosts)
+  const [celebrations, setCelebrations] = useState<CelebrationVM[]>(initialCelebrations)
+  const [feedMode, setFeedMode] = useState<'all' | 'need' | 'give' | 'celebrations'>('all')
   const [filter, setFilter] = useState('all')
+  const [celebrateOpen, setCelebrateOpen] = useState(false)
   const [requested, setRequested] = useState(() => new Set(requestedMemberIds))
   const [infoPost, setInfoPost] = useState<PostVM | null>(null)
   const [requestPost, setRequestPost] = useState<PostVM | null>(null)
@@ -50,9 +66,15 @@ export function HomeFeed({ firstName, myId, posts: initialPosts, banners, reques
   }, [feedPosts])
 
   const visible = useMemo(() => {
+    if (feedMode === 'need') {
+      return feedPosts.filter((p) => p.category === 'Requirement')
+    }
+    if (feedMode === 'give') {
+      return feedPosts.filter((p) => p.category === 'Opportunity' || p.category === 'Promotion')
+    }
     const f = TIMELINE_FILTERS.find((x) => x.id === filter)
     return f?.categories ? feedPosts.filter((p) => f.categories!.includes(p.category)) : feedPosts
-  }, [filter, feedPosts])
+  }, [feedMode, filter, feedPosts])
 
   const isRequested = (p: PostVM | null) => Boolean(p?.taggedMember && requested.has(String(p.taggedMember.id)))
   const isMine = (p: PostVM | null) => Boolean(p?.taggedMember && String(p.taggedMember.id) === String(myId))
@@ -133,9 +155,47 @@ export function HomeFeed({ firstName, myId, posts: initialPosts, banners, reques
 
   return (
     <div className="space-y-6 pb-20">
-      <div>
-        <p className="text-label text-muted">{greeting()},</p>
-        <h1 className="text-title font-bold text-navy">{firstName}</h1>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-label text-muted">{greeting()},</p>
+          <h1 className="text-title font-bold text-navy">{firstName}</h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCelebrateOpen(true)}
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#FFFBEB] px-3.5 text-[12.5px] font-bold text-[#92400E] ring-1 ring-inset ring-[#FDE68A] transition-all hover:bg-[#FEF3C7] active:scale-95"
+        >
+          <Trophy className="size-3.5 text-[#D97706]" aria-hidden="true" />
+          Celebrate Deal
+        </button>
+      </div>
+
+      {/* Quick Chapter Navigation Pills */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <Link
+          href="/directory"
+          className="flex items-center gap-2.5 rounded-2xl border border-black/[0.06] bg-surface px-3.5 py-2.5 shadow-sm transition-all hover:border-brand/30 hover:bg-pale/40 active:scale-[0.98]"
+        >
+          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-pale text-brand">
+            <Users className="size-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-label font-bold text-navy">Member Directory</p>
+            <p className="truncate text-[11px] text-muted">Search · City · Match</p>
+          </div>
+        </Link>
+        <Link
+          href="/meetups"
+          className="flex items-center gap-2.5 rounded-2xl border border-black/[0.06] bg-surface px-3.5 py-2.5 shadow-sm transition-all hover:border-brand/30 hover:bg-pale/40 active:scale-[0.98]"
+        >
+          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#ECFDF5] text-[#059669]">
+            <Calendar className="size-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-label font-bold text-navy">Meetups & 1-on-1</p>
+            <p className="truncate text-[11px] text-muted">RSVP · Coffee Connect</p>
+          </div>
+        </Link>
       </div>
 
       <AdCarousel banners={banners} />
@@ -148,9 +208,45 @@ export function HomeFeed({ firstName, myId, posts: initialPosts, banners, reques
           <p className="text-label text-muted">Opportunities and introductions curated by MNI.</p>
         </div>
 
-        {feedPosts.length > 0 && <FilterChips value={filter} onChange={setFilter} counts={counts} />}
+        {/* Need vs Give vs Celebrations Mode Bar */}
+        <div className="grid grid-cols-4 gap-1 rounded-2xl bg-[#EEF1F5] p-1">
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'need', label: 'Need' },
+            { id: 'give', label: 'Give' },
+            { id: 'celebrations', label: `Wins (${celebrations.length})` },
+          ].map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setFeedMode(m.id as typeof feedMode)}
+              className={cn(
+                'h-8 rounded-xl text-[12.5px] font-semibold transition-all',
+                feedMode === m.id ? 'bg-white text-navy shadow-sm' : 'text-muted hover:text-navy',
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
 
-        {feedPosts.length === 0 ? (
+        {feedMode === 'all' && feedPosts.length > 0 && (
+          <FilterChips value={filter} onChange={setFilter} counts={counts} />
+        )}
+
+        {feedMode === 'celebrations' ? (
+          celebrations.length === 0 ? (
+            <EmptyState icon={<Trophy className="size-5" aria-hidden="true" />} title="No closed business celebrations yet">
+              Be the first to share a deal or partnership closed through MNI!
+            </EmptyState>
+          ) : (
+            <div className="space-y-4">
+              {celebrations.map((c) => (
+                <CelebrationCard key={c.id} item={c} />
+              ))}
+            </div>
+          )
+        ) : feedPosts.length === 0 ? (
           <EmptyState icon={<Newspaper className="size-5" aria-hidden="true" />} title="Nothing on the timeline yet">
             MNI will post opportunities, requirements and member spotlights here.
           </EmptyState>
@@ -160,6 +256,9 @@ export function HomeFeed({ firstName, myId, posts: initialPosts, banners, reques
           </EmptyState>
         ) : (
           <div className="space-y-4">
+            {feedMode === 'all' && filter === 'all' && celebrations[0] && (
+              <CelebrationCard item={celebrations[0]} />
+            )}
             {visible.map((post, i) => (
               <Fragment key={post.id}>
                 <TimelineCard
@@ -179,6 +278,14 @@ export function HomeFeed({ firstName, myId, posts: initialPosts, banners, reques
           </div>
         )}
       </section>
+
+      <CelebrationModal
+        open={celebrateOpen}
+        myId={myId}
+        members={membersForPicker}
+        onClose={() => setCelebrateOpen(false)}
+        onCreated={(c) => setCelebrations((prev) => [c, ...prev])}
+      />
 
       {/* Post Detail Modal (opened when clicking Read more or card) */}
       <PostDetailModal
