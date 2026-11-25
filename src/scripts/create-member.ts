@@ -40,7 +40,7 @@ const member = await payload.create({
     businessName: arg('business')!,
     businessCategory: arg('category')!,
     memberSince: new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
-    tier: (arg('tier') as 'starter' | 'pro' | 'premium') ?? 'starter',
+    tier: (arg('tier') as 'free' | 'pro' | 'premium') ?? 'free',
     accountStatus: 'active',
   },
 })
