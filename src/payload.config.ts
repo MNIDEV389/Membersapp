@@ -24,12 +24,22 @@ if (!secret || secret.length < 32) {
   throw new Error('PAYLOAD_SECRET must be set to a random string of at least 32 characters.')
 }
 
-const siteURL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+const siteURL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://mni-members-app.vercel.app')
 const extraOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean)
-const trustedOrigins = [siteURL, ...extraOrigins]
+const trustedOrigins = Array.from(
+  new Set([
+    siteURL,
+    'https://mni-members-app.vercel.app',
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+    ...extraOrigins,
+    'http://localhost:3000',
+  ]),
+)
 
 const isProd = process.env.NODE_ENV === 'production'
 const databaseURI = process.env.DATABASE_URI || ''

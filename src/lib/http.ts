@@ -1,5 +1,6 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
+import { headers as nextHeaders } from 'next/headers'
 import type { ZodSchema } from 'zod'
 import type { Member } from '@/payload-types'
 import { getPayloadClient } from './payload'
@@ -17,9 +18,17 @@ export class HttpError extends Error {
 export const ok = <T>(data: T, init?: ResponseInit) => NextResponse.json(data, init)
 
 const trustedOrigins = () => {
-  const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://mni-members-app.vercel.app'
+  const vercel = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
   const extra = (process.env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean)
-  return new Set([new URL(site).origin, ...extra.map((o) => new URL(o).origin)])
+  const set = new Set([
+    'https://mni-members-app.vercel.app',
+    'http://localhost:3000',
+    new URL(site.startsWith('http') ? site : `https://${site}`).origin,
+    ...extra.map((o) => new URL(o).origin),
+  ])
+  if (vercel) set.add(vercel.startsWith('http') ? vercel : `https://${vercel}`)
+  return set
 }
 
 /**
@@ -61,8 +70,18 @@ export async function parseJson<T>(req: Request, schema: ZodSchema<T>): Promise<
 /** Authenticate the request as a member (cookie or `Authorization: JWT …`). */
 export async function requireApiMember(req: Request) {
   const payload = await getPayloadClient()
-  const { user } = await payload.auth({ headers: req.headers })
-  if (!user || user.collection !== 'members' || (user as Member).accountStatus === 'suspended') {
+  let authResult: { user?: unknown } | null = null
+  try {
+    const nh = await nextHeaders()
+    authResult = await payload.auth({ headers: nh })
+  } catch {
+    // nextHeaders may not be available in all contexts; fallback to req.headers
+  }
+  if (!authResult?.user) {
+    authResult = await payload.auth({ headers: req.headers }).catch(() => null)
+  }
+  const user = authResult?.user as Member | null
+  if (!user || (user as { collection?: string }).collection !== 'members' || user.accountStatus === 'suspended') {
     throw new HttpError(401, 'Please sign in to continue.')
   }
   return { payload, member: user as Member & { collection: 'members' } }
