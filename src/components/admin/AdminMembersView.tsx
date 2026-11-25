@@ -642,7 +642,7 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
             label="Profile Photo / Avatar (optional)"
             value={form.avatarUrl}
             onChange={(url) => setForm({ ...form, avatarUrl: url })}
-            aspect="square"
+            aspect="avatar"
             helperText="Upload member portrait photo (JPG, PNG, WebP) or provide an HTTPS link."
           />
         </div>
@@ -710,7 +710,7 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
                 label="Profile Photo / Avatar"
                 value={editForm.avatarUrl}
                 onChange={(url) => setEditForm({ ...editForm, avatarUrl: url })}
-                aspect="square"
+                aspect="avatar"
                 helperText="Updates member avatar across member directory, timeline posts, and digital cards."
               />
 

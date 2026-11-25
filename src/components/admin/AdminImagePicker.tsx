@@ -1,6 +1,6 @@
 'use client'
 
-import { Image as ImageIcon, Link as LinkIcon, RefreshCw, Trash2, UploadCloud } from 'lucide-react'
+import { Image as ImageIcon, Link as LinkIcon, RefreshCw, Trash2, UploadCloud, User } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/components/ui/cn'
@@ -9,7 +9,7 @@ interface Props {
   value: string | null
   onChange: (url: string | null) => void
   label?: string
-  aspect?: 'video' | 'banner' | 'square'
+  aspect?: 'video' | 'banner' | 'square' | 'avatar'
   helperText?: string
 }
 
@@ -50,7 +50,7 @@ export function AdminImagePicker({
         try {
           const canvas = document.createElement('canvas')
           let { width: w, height: h } = img
-          const maxDim = 1280
+          const maxDim = aspect === 'avatar' ? 400 : 1280
           if (w > maxDim || h > maxDim) {
             if (w > h) {
               h = Math.round((h * maxDim) / w)
@@ -121,6 +121,153 @@ export function AdminImagePicker({
   }
 
   const isDataUrl = value?.startsWith('data:')
+  const isAvatar = aspect === 'avatar'
+
+  // Special compact layout for profile avatar
+  if (isAvatar) {
+    return (
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-[13px] font-semibold text-navy">{label}</label>
+          {value && (
+            <span className="text-[11px] font-semibold text-muted">
+              {isDataUrl ? 'Photo uploaded' : 'Image link'}
+            </span>
+          )}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="sr-only"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) processFile(f)
+          }}
+        />
+
+        {value ? (
+          <div className="flex items-center gap-3.5 rounded-2xl border border-black/[0.08] bg-[#0B224E]/[0.03] p-3">
+            <div className="relative size-16 shrink-0 overflow-hidden rounded-full border-2 border-white shadow-sm ring-2 ring-black/5 bg-navy/10">
+              <img src={value} alt="Avatar Preview" className="size-full object-cover" />
+            </div>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-[12px] font-bold text-navy shadow-sm hover:bg-subtle active:scale-95"
+                >
+                  <RefreshCw className="size-3 text-brand" />
+                  Change Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="inline-flex items-center gap-1 rounded-lg border border-danger/20 bg-danger-bg/50 px-2.5 py-1.5 text-[12px] font-semibold text-danger hover:bg-danger-bg active:scale-95"
+                >
+                  <Trash2 className="size-3" />
+                  Remove
+                </button>
+              </div>
+              <p className="text-[11px] text-muted">
+                {isDataUrl ? 'Compressed avatar photo' : 'Remote avatar link'} · Auto-cropped to circle
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-black/[0.08] bg-[#0B224E]/[0.02] p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="inline-flex rounded-xl bg-black/[0.04] p-0.5 text-[11.5px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('upload')
+                    setError(null)
+                  }}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-2.5 py-1 transition-colors',
+                    tab === 'upload' ? 'bg-white text-navy shadow-sm' : 'text-muted hover:text-navy',
+                  )}
+                >
+                  <UploadCloud className="size-3.5" />
+                  Upload Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTab('url')
+                    setError(null)
+                  }}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-2.5 py-1 transition-colors',
+                    tab === 'url' ? 'bg-white text-navy shadow-sm' : 'text-muted hover:text-navy',
+                  )}
+                >
+                  <LinkIcon className="size-3.5" />
+                  Photo URL
+                </button>
+              </div>
+              <span className="text-[11px] text-muted">Max 400×400 (square)</span>
+            </div>
+
+            {tab === 'upload' ? (
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setDragOver(true)
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  'flex cursor-pointer items-center gap-3.5 rounded-xl border-2 border-dashed p-3 transition-all',
+                  dragOver
+                    ? 'border-[#007AFF] bg-[#007AFF]/5 ring-2 ring-[#007AFF]/15'
+                    : 'border-black/10 bg-white/70 hover:border-black/20 hover:bg-white',
+                )}
+              >
+                <div className="grid size-12 shrink-0 place-items-center rounded-full bg-pale text-brand ring-1 ring-black/5">
+                  <User className="size-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12.5px] font-bold text-navy">
+                    {optimizing ? 'Optimizing photo…' : 'Click to upload or drag & drop'}
+                  </p>
+                  <p className="text-[11px] text-muted">JPG, PNG, WebP · Automatically resized</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  placeholder="https://images.unsplash.com/…"
+                  className="h-9 flex-1 rounded-xl border border-line bg-surface px-3 text-[12.5px] text-ink placeholder:text-muted/60 focus:border-[#007AFF] focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleApplyUrl()
+                    }
+                  }}
+                />
+                <Button type="button" size="sm" variant="secondary" onClick={handleApplyUrl}>
+                  Apply
+                </Button>
+              </div>
+            )}
+
+            {error && <p className="text-[11.5px] font-semibold text-danger">{error}</p>}
+            {helperText && <p className="text-[11px] text-muted">{helperText}</p>}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Standard rectangular / square layout for posts and banners
   const aspectClass =
     aspect === 'banner' ? 'aspect-[21/9]' : aspect === 'square' ? 'aspect-square' : 'aspect-[16/9]'
 
