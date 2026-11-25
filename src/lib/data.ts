@@ -532,10 +532,14 @@ export async function getMeetupsAndConnects(me: Me): Promise<{
       [me.id],
     ),
     payload.find({
-      collection: 'members',
-      where: { and: [{ id: { not_equals: me.id } }, { accountStatus: { not_equals: 'suspended' } }] },
+      collection: 'contact-requests',
+      where: {
+        and: [
+          { requestedBy: { equals: me.id } },
+          { status: { in: ['contact_received', 'followup_required', 'outcome_recorded'] } },
+        ],
+      },
       overrideAccess: true,
-      sort: 'fullName',
       limit: 100,
       depth: 1,
     }),
@@ -601,9 +605,18 @@ export async function getMeetupsAndConnects(me: Me): Promise<{
     }
   })
 
+  const seenMemberIds = new Set<number>()
+  const eligibleMembers: PublicMember[] = []
+  for (const r of membersRes.docs) {
+    if (typeof r.targetMember === 'object' && r.targetMember && !seenMemberIds.has(r.targetMember.id)) {
+      seenMemberIds.add(r.targetMember.id)
+      eligibleMembers.push(toPublicMember(r.targetMember))
+    }
+  }
+
   return {
     meetups,
     connects,
-    members: membersRes.docs.map(toPublicMember),
+    members: eligibleMembers,
   }
 }

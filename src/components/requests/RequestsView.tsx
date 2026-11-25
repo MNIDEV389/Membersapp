@@ -1,10 +1,11 @@
 'use client'
 
-import { Clock, Mail, MessageSquareText, Phone, Users } from 'lucide-react'
+import { Clock, Coffee, Mail, MessageSquareText, Phone, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CONTACT_REQUEST_STATUSES } from '@/lib/constants'
 import { formatDate } from '@/lib/format'
 import type { ContactRequestVM } from '@/lib/view-models'
+import { CoffeeInviteDialog, type CoffeeEligibleMember } from '../meetups/CoffeeInviteDialog'
 import { Avatar, StatusPill, type Tone } from '../ui/Badges'
 import { Button, ButtonLink } from '../ui/Button'
 import { EmptyState } from '../ui/Feedback'
@@ -24,6 +25,7 @@ const statusLabel = Object.fromEntries(CONTACT_REQUEST_STATUSES.map((s) => [s.va
 export function RequestsView({ requests }: { requests: ContactRequestVM[] }) {
   const [tab, setTab] = useState<TabId>('all')
   const [followUp, setFollowUp] = useState<ContactRequestVM | null>(null)
+  const [inviteTarget, setInviteTarget] = useState<CoffeeEligibleMember | null>(null)
 
   const groups = useMemo(
     () => ({
@@ -141,9 +143,27 @@ export function RequestsView({ requests }: { requests: ContactRequestVM[] }) {
                   ) : (
                     <>
                       <p className="text-label text-muted">{r.followUp ? 'Outcome recorded' : 'How did it go?'}</p>
-                      <Button size="sm" variant={r.followUp ? 'secondary' : 'primary'} onClick={() => setFollowUp(r)}>
-                        {r.followUp ? 'Edit outcome' : 'Add follow-up'}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {r.contact && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon={<Coffee className="size-3.5" aria-hidden="true" />}
+                            onClick={() =>
+                              setInviteTarget({
+                                id: r.target.id,
+                                fullName: r.target.fullName,
+                                businessName: r.target.businessName,
+                              })
+                            }
+                          >
+                            Invite 1-on-1
+                          </Button>
+                        )}
+                        <Button size="sm" variant={r.followUp ? 'secondary' : 'primary'} onClick={() => setFollowUp(r)}>
+                          {r.followUp ? 'Edit outcome' : 'Add follow-up'}
+                        </Button>
+                      </div>
                     </>
                   )}
                 </div>
@@ -154,6 +174,12 @@ export function RequestsView({ requests }: { requests: ContactRequestVM[] }) {
       </TabPanel>
 
       <FollowUpDialog request={followUp} onClose={() => setFollowUp(null)} />
+      <CoffeeInviteDialog
+        open={Boolean(inviteTarget)}
+        onClose={() => setInviteTarget(null)}
+        members={inviteTarget ? [inviteTarget] : []}
+        preselectedMember={inviteTarget}
+      />
     </div>
   )
 }

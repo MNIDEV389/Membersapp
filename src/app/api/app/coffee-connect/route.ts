@@ -28,6 +28,19 @@ export const POST = handler(async (req) => {
   if (!proposedTime) throw new HttpError(400, 'Choose or enter a preferred time slot')
 
   const pool = getPgPool()
+
+  // Enforce: user can only invite members whose contact they requested from Admin AND received
+  const receivedRes = await pool.query(
+    `SELECT id FROM contact_requests
+     WHERE requested_by_id = $1 AND target_member_id = $2
+       AND status IN ('contact_received', 'followup_required', 'outcome_recorded')
+     LIMIT 1`,
+    [member.id, targetId],
+  )
+  if (receivedRes.rows.length === 0) {
+    throw new HttpError(403, 'You can only invite members whose contact you have requested and received from Admin.')
+  }
+
   const targetRes = await pool.query(
     `SELECT id, full_name, avatar_initials, custom_avatar, business_name, city FROM members WHERE id = $1`,
     [targetId],

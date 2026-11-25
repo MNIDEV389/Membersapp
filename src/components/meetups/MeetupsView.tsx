@@ -7,14 +7,11 @@ import { api, ApiError } from '@/lib/client-api'
 import { formatDate, timeAgo } from '@/lib/format'
 import type { CoffeeConnectVM, MeetupAttendeeVM, MeetupVM, PublicMember } from '@/lib/view-models'
 import { Avatar } from '../ui/Badges'
-import { Button } from '../ui/Button'
 import { Dialog } from '../ui/Dialog'
 import { EmptyState } from '../ui/Feedback'
-import { Field, Input, Select, Textarea } from '../ui/Field'
 import { useToast } from '../ui/Toast'
 import { cn } from '../ui/cn'
-
-const TIME_SLOTS = ['Tomorrow · 10:30 AM', 'Tomorrow · 4:00 PM', 'This Friday · 11:00 AM', 'Next Monday · 3:00 PM']
+import { CoffeeInviteDialog } from './CoffeeInviteDialog'
 
 export function MeetupsView({
   initialMeetups,
@@ -30,10 +27,6 @@ export function MeetupsView({
   const [connects, setConnects] = useState<CoffeeConnectVM[]>(initialConnects)
   const [attendeesModal, setAttendeesModal] = useState<MeetupVM | null>(null)
   const [coffeeModalOpen, setCoffeeModalOpen] = useState(false)
-  const [targetId, setTargetId] = useState('')
-  const [proposedTime, setProposedTime] = useState(TIME_SLOTS[0])
-  const [note, setNote] = useState('')
-  const [submitting, setSubmitting] = useState(false)
   const [busyRsvp, setBusyRsvp] = useState<number | string | null>(null)
 
   const toggleRsvp = async (meetup: MeetupVM) => {
@@ -61,28 +54,6 @@ export function MeetupsView({
     }
   }
 
-  const sendCoffeeConnect = async () => {
-    if (!targetId) {
-      toast('Select a member to invite', 'error')
-      return
-    }
-    setSubmitting(true)
-    try {
-      const res = await api<{ ok: boolean; connect: CoffeeConnectVM }>('/api/app/coffee-connect', {
-        body: { targetMemberId: Number(targetId), proposedTime, note },
-      })
-      setConnects((prev) => [res.connect, ...prev])
-      toast('1-on-1 Coffee Connect sent! +30 Contributor Points awarded.')
-      setCoffeeModalOpen(false)
-      setTargetId('')
-      setNote('')
-    } catch (err) {
-      toast((err as ApiError).message || 'Failed to send invite', 'error')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   const respondConnect = async (id: number | string, status: 'accepted' | 'declined') => {
     try {
       await api('/api/app/coffee-connect', { method: 'PATCH', body: { id, status } })
@@ -104,17 +75,17 @@ export function MeetupsView({
           <ArrowLeft className="size-5" aria-hidden="true" />
         </Link>
         <div>
-          <h1 className="text-title font-bold text-navy">Meetups & 1-on-1</h1>
-          <p className="text-label text-muted">RSVP to chapter events or schedule a Coffee Connect.</p>
+          <h1 className="text-title font-bold text-navy">Meetups &amp; 1-on-1</h1>
+          <p className="text-label text-muted">RSVP to MNI Organised Events or invite received contacts for 1-on-1.</p>
         </div>
       </header>
 
-      {/* Chapter Meetups */}
+      {/* MNI Organised Meetups */}
       <section className="space-y-3">
-        <h2 className="text-section font-bold text-navy">Upcoming Chapter Meetups</h2>
+        <h2 className="text-section font-bold text-navy">MNI Organised Meetups</h2>
         {meetups.length === 0 ? (
           <EmptyState icon={<Calendar className="size-5" />} title="No upcoming meetups">
-            Check back soon for new chapter events.
+            Check back soon for new MNI Organised Events.
           </EmptyState>
         ) : (
           <div className="space-y-3.5">
@@ -126,7 +97,7 @@ export function MeetupsView({
                 <div className="flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1 rounded-full bg-pale px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-strong">
                     <MapPin className="size-3" />
-                    {m.city} Chapter
+                    MNI Organised · {m.city}
                   </span>
                   <time className="text-caption font-semibold text-muted">{formatDate(m.startsAt)}</time>
                 </div>
@@ -183,21 +154,38 @@ export function MeetupsView({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-section font-bold text-navy">1-on-1 Coffee Connect</h2>
-            <p className="text-caption text-muted">Meet a fellow member for 20 minutes.</p>
+            <p className="text-caption text-muted">Only available with contacts you requested &amp; received from Admin.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setCoffeeModalOpen(true)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-navy px-3.5 text-[12.5px] font-semibold text-white transition-all hover:bg-navy/90 active:scale-95"
-          >
-            <Plus className="size-3.5" />
-            Invite
-          </button>
+          {members.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setCoffeeModalOpen(true)}
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-navy px-3.5 text-[12.5px] font-semibold text-white transition-all hover:bg-navy/90 active:scale-95"
+            >
+              <Plus className="size-3.5" />
+              Invite
+            </button>
+          )}
         </div>
 
         {connects.length === 0 ? (
-          <EmptyState icon={<Coffee className="size-5" />} title="No 1-on-1 coffee connects yet">
-            Tap Invite to schedule a quick coffee or call with another MNI member.
+          <EmptyState
+            icon={<Coffee className="size-5" />}
+            title="No 1-on-1 coffee connects yet"
+            action={
+              members.length === 0 ? (
+                <Link
+                  href="/directory"
+                  className="inline-flex h-9 items-center rounded-full bg-[#007AFF] px-4 text-caption font-semibold text-white"
+                >
+                  Request Contacts in Directory
+                </Link>
+              ) : undefined
+            }
+          >
+            {members.length > 0
+              ? 'Tap Invite above or open your Requests console to invite a received contact.'
+              : 'Request a member contact from Admin first. Once received, you can invite them for a 1-on-1.'}
           </EmptyState>
         ) : (
           <div className="space-y-3">
@@ -293,70 +281,12 @@ export function MeetupsView({
       </Dialog>
 
       {/* Schedule 1-on-1 Coffee Connect Modal */}
-      <Dialog
+      <CoffeeInviteDialog
         open={coffeeModalOpen}
         onClose={() => setCoffeeModalOpen(false)}
-        busy={submitting}
-        title="Schedule 1-on-1 Coffee Connect"
-        description="Send a quick 20-minute catch-up invite and earn +30 Contributor Points."
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setCoffeeModalOpen(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button onClick={sendCoffeeConnect} loading={submitting} loadingText="Sending…">
-              Send Invite
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <Field label="Choose member">
-            <Select value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-              <option value="">Select an MNI member…</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.fullName} — {m.businessName} ({m.city})
-                </option>
-              ))}
-            </Select>
-          </Field>
-
-          <Field label="Preferred slot">
-            <div>
-              <Input
-                value={proposedTime}
-                onChange={(e) => setProposedTime(e.target.value)}
-                placeholder="e.g. Tomorrow · 10:30 AM"
-              />
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {TIME_SLOTS.map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => setProposedTime(slot)}
-                    className={cn(
-                      'rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
-                      proposedTime === slot ? 'bg-navy text-white' : 'bg-subtle text-muted hover:text-navy',
-                    )}
-                  >
-                    {slot}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </Field>
-
-          <Field label="Short agenda" optional>
-            <Textarea
-              rows={3}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g. Would love to explore synergies between our teams over coffee."
-            />
-          </Field>
-        </div>
-      </Dialog>
+        members={members}
+        onCreated={(c) => setConnects((prev) => [c, ...prev])}
+      />
     </div>
   )
 }
