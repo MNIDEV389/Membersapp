@@ -30,31 +30,31 @@ export function CelebrationCard({
 
     // Stage 1: Tight fast upward pop
     confetti({
-      particleCount: 28,
-      spread: 52,
-      startVelocity: 36,
+      particleCount: 35,
+      spread: 60,
+      startVelocity: 38,
       decay: 0.91,
-      scalar: 0.85,
-      ticks: 140,
+      scalar: 0.95,
+      ticks: 160,
+      zIndex: 9999,
       origin,
       colors,
-      disableForReducedMotion: true,
     })
 
     // Stage 2: Wide shimmering confetti shower
     setTimeout(() => {
       confetti({
-        particleCount: 42,
-        spread: 88,
-        startVelocity: 44,
+        particleCount: 55,
+        spread: 95,
+        startVelocity: 46,
         decay: 0.92,
-        scalar: 1.0,
+        scalar: 1.05,
         gravity: 0.95,
         drift: 0.1,
-        ticks: 180,
+        ticks: 200,
+        zIndex: 9999,
         origin,
         colors,
-        disableForReducedMotion: true,
       })
     }, 90)
   }
