@@ -1,12 +1,14 @@
 'use client'
 
-import { Check, Copy, MapPin, QrCode, Share2 } from 'lucide-react'
+import { Check, Copy, ExternalLink, MapPin, QrCode, Share2 } from 'lucide-react'
+import Link from 'next/link'
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import type { SelfProfile } from '@/lib/view-models'
 import { Avatar, TierBadge, VerifiedMark } from '../ui/Badges'
 import { Dialog } from '../ui/Dialog'
 import { useToast } from '../ui/Toast'
+import { SaveContactButton } from './SaveContactButton'
 
 export function DigitalCardModal({
   open,
@@ -20,34 +22,52 @@ export function DigitalCardModal({
   avatarUrl: string | null
 }) {
   const toast = useToast()
+  const [showQr, setShowQr] = useState(false)
   const [qrSrc, setQrSrc] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  const profileUrl =
+  const publicCardPath = `/card/${encodeURIComponent(profile.memberId)}`
+  const cardUrl =
     typeof window !== 'undefined'
-      ? `${window.location.origin}/directory?member=${encodeURIComponent(profile.memberId)}`
-      : `https://mni-members-app.vercel.app/directory?member=${encodeURIComponent(profile.memberId)}`
+      ? `${window.location.origin}${publicCardPath}`
+      : `https://mni-members-app.vercel.app${publicCardPath}`
 
   useEffect(() => {
-    if (!open) return
-    QRCode.toDataURL(profileUrl, {
-      width: 240,
+    if (!open || !showQr) return
+    QRCode.toDataURL(cardUrl, {
+      width: 220,
       margin: 1,
       color: { dark: '#0B224E', light: '#FFFFFF' },
     })
       .then(setQrSrc)
       .catch(() => {})
-  }, [open, profileUrl])
+  }, [open, showQr, cardUrl])
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(profileUrl)
+      await navigator.clipboard.writeText(cardUrl)
       setCopied(true)
-      toast('Digital business card link copied!')
+      toast('Public MNI Card link copied!')
       setTimeout(() => setCopied(false), 2000)
     } catch {
       toast('Could not copy link', 'error')
     }
+  }
+
+  const shareCard = async () => {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: `${profile.fullName} · MNI Digital Card`,
+          text: `Connect with ${profile.fullName} (${profile.businessName}) on MNI`,
+          url: cardUrl,
+        })
+        return
+      } catch {
+        // Fallback to copy
+      }
+    }
+    copyLink()
   }
 
   return (
@@ -84,44 +104,64 @@ export function DigitalCardModal({
             </div>
           </div>
 
-          {/* QR Code Surface */}
-          <div className="mt-5 flex flex-col items-center rounded-2xl bg-white p-4 text-center text-navy shadow-inner">
-            {qrSrc ? (
-              <img src={qrSrc} alt="Member QR Code" className="size-44 rounded-lg" />
-            ) : (
-              <div className="grid size-44 place-items-center rounded-lg bg-subtle text-muted">
-                <QrCode className="size-10" />
-              </div>
-            )}
-            <p className="mt-2 text-caption font-semibold text-navy">Scan to connect via MNI Directory</p>
-          </div>
+          {showQr && qrSrc && (
+            <div className="mt-5 flex flex-col items-center rounded-2xl bg-white p-4 text-center text-navy shadow-inner">
+              <img src={qrSrc} alt="Public MNI Card QR" className="size-40 rounded-lg" />
+              <p className="mt-2 text-caption font-semibold text-navy">Opens public MNI business card</p>
+            </div>
+          )}
         </div>
 
-        <button
-          type="button"
-          onClick={copyLink}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#007AFF] text-label font-semibold text-white shadow-sm transition-all hover:bg-[#0066E0] active:scale-[0.98]"
-        >
-          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-          {copied ? 'Copied!' : 'Copy Digital Card Link'}
-        </button>
+        {/* Primary Action: Download vCard */}
+        <SaveContactButton
+          fullName={profile.fullName}
+          businessName={profile.businessName}
+          businessCategory={profile.businessCategory}
+          city={profile.city}
+          websiteUrl={profile.websiteUrl}
+          memberId={profile.memberId}
+          cardUrl={cardUrl}
+        />
 
-        {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
+        {/* Share & Copy Actions */}
+        <div className="grid grid-cols-2 gap-2.5">
           <button
             type="button"
-            onClick={() =>
-              navigator.share({
-                title: `${profile.fullName} · MNI Member Card`,
-                text: `Connect with ${profile.fullName} (${profile.businessName}) on MNI`,
-                url: profileUrl,
-              }).catch(() => {})
-            }
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-2xl border border-line bg-surface text-label font-semibold text-navy hover:bg-subtle"
+            onClick={shareCard}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-line bg-surface text-label font-semibold text-navy hover:bg-subtle"
           >
-            <Share2 className="size-4" />
-            Share via…
+            <Share2 className="size-4 text-brand" />
+            Share Card
           </button>
-        )}
+          <button
+            type="button"
+            onClick={copyLink}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-line bg-surface text-label font-semibold text-navy hover:bg-subtle"
+          >
+            {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4 text-brand" />}
+            {copied ? 'Copied' : 'Copy Link'}
+          </button>
+        </div>
+
+        {/* Preview Public Card & Optional In-Person QR Toggle */}
+        <div className="flex items-center justify-between pt-1 text-caption font-semibold">
+          <Link
+            href={publicCardPath}
+            target="_blank"
+            className="inline-flex items-center gap-1.5 text-brand hover:underline"
+          >
+            <ExternalLink className="size-3.5" />
+            Preview Public Card
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowQr((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-muted hover:text-navy"
+          >
+            <QrCode className="size-3.5" />
+            {showQr ? 'Hide QR' : 'Show In-Person QR'}
+          </button>
+        </div>
       </div>
     </Dialog>
   )
