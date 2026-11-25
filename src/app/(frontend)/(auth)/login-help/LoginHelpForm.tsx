@@ -11,7 +11,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/Field'
 type Reason = 'new_credentials' | 'forgot_password' | 'verification_status' | 'account_locked' | 'other'
 
 const reasons: { value: Reason; label: string }[] = [
-  { value: 'new_credentials', label: 'I’m a member and need my login details' },
+  { value: 'new_credentials', label: 'I’m a member & need my login details' },
   { value: 'forgot_password', label: 'I forgot my password' },
   { value: 'account_locked', label: 'My account is locked or inactive' },
   { value: 'verification_status', label: 'Check my membership verification' },

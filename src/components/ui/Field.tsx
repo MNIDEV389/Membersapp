@@ -41,7 +41,7 @@ export function Select({ invalid, className, children, ...props }: SelectHTMLAtt
         className={cn(
           control,
           controlState(invalid),
-          'h-11 sm:h-12 cursor-pointer appearance-none pr-10 font-medium',
+          'h-11 sm:h-12 cursor-pointer appearance-none [appearance:none] [-webkit-appearance:none] [-moz-appearance:none] pr-10 font-medium text-[14px] sm:text-[15px] truncate',
           className,
         )}
         aria-invalid={invalid || undefined}
@@ -49,7 +49,7 @@ export function Select({ invalid, className, children, ...props }: SelectHTMLAtt
       >
         {children}
       </select>
-      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-[#8E8E93]">
+      <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center text-[#8E8E93]">
         <ChevronsUpDown className="size-4" strokeWidth={2} aria-hidden="true" />
       </div>
     </div>
