@@ -59,7 +59,7 @@ export function TimelineCard({
         {m ? (
           <Avatar initials={m.avatarInitials} src={m.avatarUrl} size="sm" />
         ) : (
-          <Avatar initials="MNI" size="sm" className="text-[10px]" />
+          <Avatar initials="MNI" src="/brand/mni-logo.webp" size="sm" />
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-label font-semibold text-navy">
