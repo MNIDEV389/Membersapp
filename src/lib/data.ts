@@ -474,44 +474,43 @@ export async function getDirectoryMembers(me: Me): Promise<DirectoryMemberVM[]> 
     myRequests.docs.map((r) => String(typeof r.targetMember === 'object' ? r.targetMember.id : r.targetMember)),
   )
 
-  const STOP_WORDS = new Set([
-    'business', 'businesses', 'company', 'companies', 'service', 'services', 'solution', 'solutions',
-    'india', 'indian', 'growth', 'growing', 'client', 'clients', 'looking', 'member', 'members',
-    'network', 'curated', 'partner', 'partners', 'operations', 'management', 'team', 'teams',
-    'with', 'that', 'this', 'from', 'your', 'their', 'about', 'into', 'across', 'want', 'would', 'like',
-  ])
-
-  const myKeywords = [
-    me.businessCategory,
-    me.whatWeDo,
-    me.keyProductService,
-    me.idealClient,
-    me.opportunityLookingFor,
-    me.targetConnections,
+  // Curated MNI business vertical clusters for accurate deterministic matching (no free-text guessing)
+  const VERTICAL_CLUSTERS: { label: string; terms: string[] }[] = [
+    { label: 'Tech & SaaS', terms: ['tech', 'saas', 'software', 'cloud', 'analytics', 'it ', 'digital', 'data'] },
+    { label: 'Packaging & Print', terms: ['packaging', 'print', 'box', 'label', 'corrugated', 'manufacturing'] },
+    { label: 'Events & Alliances', terms: ['event', 'alliance', 'networking', 'community', 'marketing', 'brand'] },
+    { label: 'Finance & Legal', terms: ['finance', 'fintech', 'legal', 'tax', 'audit', 'capital', 'investment'] },
+    { label: 'Real Estate & Infra', terms: ['real estate', 'infra', 'construction', 'architecture', 'interior'] },
+    { label: 'D2C & Retail', terms: ['d2c', 'retail', 'ecommerce', 'consumer', 'fmcg'] },
   ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((w) => w.length >= 4 && !STOP_WORDS.has(w))
 
-  const myKeywordSet = new Set(myKeywords)
+  const getClusters = (text: string) => {
+    const lower = ` ${text.toLowerCase()} `
+    return VERTICAL_CLUSTERS.filter((c) => c.terms.some((t) => lower.includes(t))).map((c) => c.label)
+  }
+
+  const myNeedsText = [me.idealClient, me.opportunityLookingFor, me.targetConnections].filter(Boolean).join(' ')
+  const myOfferText = [me.businessCategory, me.whatWeDo, me.keyProductService].filter(Boolean).join(' ')
+  const myNeedClusters = new Set(getClusters(myNeedsText))
+  const myOfferClusters = new Set(getClusters(myOfferText))
 
   return membersRes.docs.map((doc) => {
     const pub = toPublicMember(doc)
-    const targetText = [pub.idealClient, pub.opportunityLookingFor, pub.targetConnections, pub.businessCategory]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
+    const theirOfferText = [pub.businessCategory, pub.whatWeDo, pub.keyProductService].filter(Boolean).join(' ')
+    const theirNeedsText = [pub.idealClient, pub.opportunityLookingFor, pub.targetConnections].filter(Boolean).join(' ')
+    const theirOfferClusters = getClusters(theirOfferText)
+    const theirNeedClusters = getClusters(theirNeedsText)
 
     let matchReason: string | null = null
     if (doc.id !== me.id) {
-      if (pub.city && me.city && pub.city.toLowerCase() === me.city.toLowerCase()) {
+      const needMatch = theirOfferClusters.find((c) => myNeedClusters.has(c))
+      const offerMatch = theirNeedClusters.find((c) => myOfferClusters.has(c))
+      if (needMatch) {
+        matchReason = `Vertical match: ${needMatch}`
+      } else if (offerMatch) {
+        matchReason = `Looking for: ${offerMatch}`
+      } else if (pub.city && me.city && pub.city.toLowerCase() === me.city.toLowerCase()) {
         matchReason = `Same city: ${pub.city}`
-      }
-      const matchedWord = [...myKeywordSet].find((w) => targetText.includes(w))
-      if (matchedWord) {
-        matchReason = `Shared focus: ${matchedWord}`
       }
     }
 
