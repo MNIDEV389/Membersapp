@@ -13,7 +13,7 @@ export default async function MemberLayout({ children }: { children: ReactNode }
   return (
     <div className="min-h-dvh pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
       <AppHeader initialUnread={unreadCount} />
-      <main id="main" tabIndex={-1} className="mx-auto max-w-xl px-4 pt-5 outline-none sm:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto max-w-xl px-4 pt-5 pb-10 outline-none sm:px-6">
         {children}
       </main>
       <BottomNav />

@@ -1,9 +1,9 @@
 'use client'
 
-import { Award, Briefcase, CalendarClock, ChevronRight, Compass, ExternalLink, HelpCircle, KeyRound, LogOut, Mail, MapPin, MessageCircle, PencilLine, Phone, Sparkles, Target, Trophy } from 'lucide-react'
+import { Award, Briefcase, CalendarClock, Camera, ChevronRight, Compass, ExternalLink, HelpCircle, KeyRound, LogOut, Mail, MapPin, MessageCircle, PencilLine, Phone, Sparkles, Target, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { api } from '@/lib/client-api'
 import { formatDate, formatNumber, websiteHref } from '@/lib/format'
 import type { SelfProfile } from '@/lib/view-models'
@@ -26,7 +26,64 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [withdrawing, setWithdrawing] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatarUrl)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const site = websiteHref(profile.websiteUrl)
+
+  useEffect(() => {
+    setAvatarUrl(profile.avatarUrl)
+  }, [profile.avatarUrl])
+
+  const compressAndUploadAvatar = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file (JPG, PNG, or WebP).', 'error')
+      return
+    }
+    setUploadingAvatar(true)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = async () => {
+        const canvas = document.createElement('canvas')
+        const MAX_SIZE = 360
+        let w = img.width
+        let h = img.height
+        if (w > h) {
+          if (w > MAX_SIZE) {
+            h = Math.round((h * MAX_SIZE) / w)
+            w = MAX_SIZE
+          }
+        } else {
+          if (h > MAX_SIZE) {
+            w = Math.round((w * MAX_SIZE) / h)
+            h = MAX_SIZE
+          }
+        }
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          setUploadingAvatar(false)
+          return
+        }
+        ctx.drawImage(img, 0, 0, w, h)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        setAvatarUrl(dataUrl)
+        try {
+          await api('/api/app/profile/avatar', { body: { avatarUrl: dataUrl } })
+          toast('Profile picture updated!')
+          router.refresh()
+        } catch (err) {
+          toast((err as Error).message || 'Failed to update avatar.', 'error')
+          setAvatarUrl(profile.avatarUrl)
+        } finally {
+          setUploadingAvatar(false)
+        }
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
 
   const logout = async () => {
     setLoggingOut(true)
@@ -57,7 +114,25 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
 
       <section className="rounded-[var(--radius-panel)] bg-navy p-5 text-white sm:p-6" aria-label="Profile summary">
         <div className="flex items-start gap-4">
-          <Avatar initials={profile.avatarInitials} src={profile.avatarUrl} size="xl" tone="white" />
+          <div className="relative group shrink-0">
+            <Avatar initials={profile.avatarInitials} src={avatarUrl} size="xl" tone="white" />
+            <label
+              className="absolute -bottom-1 -right-1 grid size-8 cursor-pointer place-items-center rounded-full bg-[#007AFF] text-white shadow-lg ring-2 ring-navy transition-all hover:scale-110 active:scale-95"
+              title="Upload profile photo"
+            >
+              <Camera className="size-4" />
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploadingAvatar}
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) compressAndUploadAvatar(f)
+                }}
+              />
+            </label>
+          </div>
           <div className="min-w-0 flex-1 space-y-1 pt-1">
             <p className="flex flex-wrap items-center gap-2 text-section font-bold">
               {profile.fullName}

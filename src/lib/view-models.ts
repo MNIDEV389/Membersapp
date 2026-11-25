@@ -52,6 +52,15 @@ export interface ImageVM {
   height?: number | null
 }
 
+export interface PostSeenByMember {
+  id: ID
+  fullName: string
+  avatarInitials: string
+  avatarUrl: string | null
+  businessName: string
+  viewedAt: string
+}
+
 export interface PostVM {
   id: ID
   title: string
@@ -62,6 +71,11 @@ export interface PostVM {
   image: ImageVM | null
   taggedMember: PublicMember | null
   publishedAt: string | null
+  likesCount: number
+  isLikedByMe: boolean
+  viewsCount: number
+  isViewedByMe: boolean
+  seenBy?: PostSeenByMember[]
 }
 
 export interface BannerVM {

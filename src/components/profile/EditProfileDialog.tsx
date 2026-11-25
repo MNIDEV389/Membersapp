@@ -2,10 +2,12 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { Camera, Trash2, Upload } from 'lucide-react'
 import { CALL_DAYS, CALL_TIME_SLOTS } from '@/lib/constants'
 import { api, ApiError } from '@/lib/client-api'
 import { profileChangeSchema, type ProfileChangeInput } from '@/lib/schemas'
 import type { SelfProfile } from '@/lib/view-models'
+import { Avatar } from '../ui/Badges'
 import { Button } from '../ui/Button'
 import { Dialog } from '../ui/Dialog'
 import { Alert } from '../ui/Feedback'
@@ -43,6 +45,8 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
     const w = pendingChanges?.whatsapp ?? profile.whatsapp ?? ''
     return !w || w === profile.phone
   })
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatarUrl)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -52,10 +56,76 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
       setForm(fromProfile(profile, pendingChanges))
       const w = pendingChanges?.whatsapp ?? profile.whatsapp ?? ''
       setSameWhatsapp(!w || w === profile.phone)
+      setAvatarUrl(profile.avatarUrl)
       setErrors({})
       setFormError(null)
     }
   }, [open, profile, pendingChanges])
+
+  const handlePhotoUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast('Please choose a valid image file (JPG, PNG, or WebP).', 'error')
+      return
+    }
+    setUploadingPhoto(true)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = async () => {
+        const canvas = document.createElement('canvas')
+        const MAX_SIZE = 360
+        let w = img.width
+        let h = img.height
+        if (w > h) {
+          if (w > MAX_SIZE) {
+            h = Math.round((h * MAX_SIZE) / w)
+            w = MAX_SIZE
+          }
+        } else {
+          if (h > MAX_SIZE) {
+            w = Math.round((w * MAX_SIZE) / h)
+            h = MAX_SIZE
+          }
+        }
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          setUploadingPhoto(false)
+          return
+        }
+        ctx.drawImage(img, 0, 0, w, h)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        setAvatarUrl(dataUrl)
+        try {
+          await api('/api/app/profile/avatar', { body: { avatarUrl: dataUrl } })
+          toast('Profile picture updated successfully!')
+          router.refresh()
+        } catch (err) {
+          toast((err as Error).message || 'Failed to update photo.', 'error')
+          setAvatarUrl(profile.avatarUrl)
+        } finally {
+          setUploadingPhoto(false)
+        }
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemovePhoto = async () => {
+    setUploadingPhoto(true)
+    try {
+      await api('/api/app/profile/avatar', { body: { remove: true } })
+      setAvatarUrl(null)
+      toast('Profile photo removed.')
+      router.refresh()
+    } catch (err) {
+      toast((err as Error).message || 'Failed to remove photo.', 'error')
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
 
   const set = (k: keyof FormState) => (e: { target: { value: string } }) => {
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -107,6 +177,42 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
     >
       <div className="space-y-6">
         {formError && <Alert tone="danger">{formError}</Alert>}
+
+        {/* Profile Picture Upload Section */}
+        <div className="flex items-center gap-4 rounded-2xl border border-black/[0.06] bg-[#F7F8FA] p-4">
+          <Avatar initials={profile.avatarInitials} src={avatarUrl} size="lg" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <p className="text-[14px] font-semibold text-navy">Profile Picture</p>
+            <p className="text-caption text-muted">Upload a clear photo of yourself for your member card.</p>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-[#007AFF] px-3.5 text-[12.5px] font-semibold text-white shadow-sm transition-all hover:bg-[#0066E0] active:scale-95">
+                <Camera className="size-3.5" />
+                {uploadingPhoto ? 'Uploading…' : avatarUrl ? 'Change photo' : 'Upload photo'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingPhoto}
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) handlePhotoUpload(f)
+                  }}
+                />
+              </label>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  disabled={uploadingPhoto}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 text-[12.5px] font-medium text-danger hover:bg-danger-bg/40 active:scale-95"
+                >
+                  <Trash2 className="size-3.5" />
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         <fieldset className="space-y-4">
           <legend className="mb-1 text-caption font-bold uppercase tracking-wider text-muted">Basics</legend>

@@ -34,11 +34,12 @@ export function toImage(
 
 /** Allow-listed public projection of a member (no email/phone/coins/notes). */
 export function toPublicMember(m: Member): PublicMember {
+  const customAvatar = (m as any).custom_avatar || (m as any).customAvatar || null
   return {
     id: m.id,
     fullName: m.fullName,
     avatarInitials: m.avatarInitials || m.fullName.slice(0, 2).toUpperCase(),
-    avatarUrl: toImage(m.avatarImage)?.url ?? null,
+    avatarUrl: (customAvatar || toImage(m.avatarImage)?.url) ?? null,
     businessName: m.businessName,
     businessCategory: m.businessCategory,
     city: m.city,
@@ -71,7 +72,16 @@ export function toSelfProfile(m: Member): SelfProfile {
   }
 }
 
-export function toPost(p: Post): PostVM {
+export function toPost(
+  p: Post,
+  social?: {
+    likesCount?: number
+    isLikedByMe?: boolean
+    viewsCount?: number
+    isViewedByMe?: boolean
+    seenBy?: import('./view-models').PostSeenByMember[]
+  },
+): PostVM {
   const image = p.postType === 'text_only' ? null : toImage(p.image, p.imageUrl, p.imageAlt || p.title)
   return {
     id: p.id,
@@ -84,6 +94,11 @@ export function toPost(p: Post): PostVM {
     image,
     taggedMember: isObj<Member>(p.taggedMember) ? toPublicMember(p.taggedMember) : null,
     publishedAt: p.publishedAt ?? null,
+    likesCount: social?.likesCount ?? 0,
+    isLikedByMe: social?.isLikedByMe ?? false,
+    viewsCount: social?.viewsCount ?? 0,
+    isViewedByMe: social?.isViewedByMe ?? false,
+    seenBy: social?.seenBy ?? [],
   }
 }
 
