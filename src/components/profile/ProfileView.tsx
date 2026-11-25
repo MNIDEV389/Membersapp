@@ -113,41 +113,50 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
       <h1 className="sr-only">Your profile</h1>
 
       <section className="rounded-[var(--radius-panel)] bg-navy p-5 text-white sm:p-6" aria-label="Profile summary">
-        <div className="flex items-start gap-4">
-          <div className="relative group shrink-0">
-            <Avatar initials={profile.avatarInitials} src={avatarUrl} size="xl" tone="white" />
-            <label
-              className="absolute -bottom-1 -right-1 grid size-8 cursor-pointer place-items-center rounded-full bg-[#007AFF] text-white shadow-lg ring-2 ring-navy transition-all hover:scale-110 active:scale-95"
-              title="Upload profile photo"
-            >
-              <Camera className="size-4" />
-              <input
-                type="file"
-                accept="image/*"
-                disabled={uploadingAvatar}
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) compressAndUploadAvatar(f)
-                }}
-              />
-            </label>
-          </div>
-          <div className="min-w-0 flex-1 space-y-1 pt-1">
-            <p className="flex flex-wrap items-center gap-2 text-section font-bold">
-              {profile.fullName}
-              {profile.isVerified && <VerifiedMark className="[&_svg]:text-[#7fd4b8]" />}
-            </p>
-            <p className="text-label font-medium text-on-navy-muted">{profile.businessName}</p>
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <TierBadge tier={profile.tier} onNavy />
-              <span className="text-caption text-on-navy-muted">{profile.memberId}</span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3.5 min-w-0 flex-1">
+            <div className="relative group shrink-0">
+              <Avatar initials={profile.avatarInitials} src={avatarUrl} size="xl" tone="white" />
+              <label
+                className="absolute -bottom-1 -right-1 grid size-8 cursor-pointer place-items-center rounded-full bg-[#007AFF] text-white shadow-lg ring-2 ring-navy transition-all hover:scale-110 active:scale-95"
+                title="Upload profile photo"
+              >
+                <Camera className="size-4" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingAvatar}
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) compressAndUploadAvatar(f)
+                  }}
+                />
+              </label>
+            </div>
+            <div className="min-w-0 flex-1 space-y-1 pt-0.5">
+              <p className="flex flex-wrap items-center gap-2 text-section font-bold">
+                {profile.fullName}
+                {profile.isVerified && <VerifiedMark className="[&_svg]:text-[#7fd4b8]" />}
+              </p>
+              <p className="text-label font-medium text-on-navy-muted truncate">{profile.businessName}</p>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <TierBadge tier={profile.tier} onNavy />
+                <span className="text-caption text-on-navy-muted">{profile.memberId}</span>
+              </div>
             </div>
           </div>
+
+          {/* Small compact Edit button on the right side */}
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-3 text-[12.5px] font-semibold text-white backdrop-blur transition-all hover:bg-white/25 active:scale-95"
+          >
+            <PencilLine className="size-3.5" aria-hidden="true" />
+            {pending ? 'Review' : 'Edit profile'}
+          </button>
         </div>
-        <Button variant="on-navy" fullWidth className="mt-4" onClick={() => setEditing(true)} icon={<PencilLine className="size-4" aria-hidden="true" />}>
-          {pending ? 'Update pending changes' : 'Edit profile'}
-        </Button>
       </section>
 
       {pending && (
