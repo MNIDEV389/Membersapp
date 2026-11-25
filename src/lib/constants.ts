@@ -18,6 +18,16 @@ export const CALL_TIME_SLOTS = [
   '7:00 PM - 9:00 PM',
 ] as const
 
+export const BANNER_CATEGORIES = [
+  'Spotlight',
+  'Community Meetup',
+  'Rewards',
+  'Announcement',
+  'Exclusive Opportunity',
+  'Sponsored',
+] as const
+export type BannerCategory = (typeof BANNER_CATEGORIES)[number]
+
 export const POST_TYPES = [
   { value: 'image_only', label: 'Image only' },
   { value: 'text_only', label: 'Text only' },

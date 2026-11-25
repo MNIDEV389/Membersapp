@@ -2,11 +2,12 @@
 
 import { ArrowUpRight, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { BANNER_CATEGORIES } from '@/lib/constants'
 import { api, ApiError } from '@/lib/client-api'
 import { StatusPill } from '@/components/ui/Badges'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
-import { Field, Input } from '@/components/ui/Field'
+import { Field, Input, Select } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { AdminImagePicker } from './AdminImagePicker'
 
@@ -30,7 +31,7 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
   const [form, setForm] = useState({
     title: '',
     subtitle: '',
-    category: 'Spotlight',
+    category: BANNER_CATEGORIES[0] as string,
     imageUrl: null as string | null,
     actionLabel: 'Explore',
     actionLink: '/meetups',
@@ -65,7 +66,7 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
       setForm({
         title: '',
         subtitle: '',
-        category: 'Spotlight',
+        category: BANNER_CATEGORIES[0],
         imageUrl: null,
         actionLabel: 'Explore',
         actionLink: '/meetups',
@@ -220,7 +221,16 @@ export function AdminBannersView({ initialBanners }: { initialBanners: AdminBann
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Category / Tag">
-              <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="e.g. Spotlight, Rewards" />
+              <Select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              >
+                {BANNER_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </Select>
             </Field>
             <Field label="Action Label">
               <Input value={form.actionLabel} onChange={(e) => setForm({ ...form, actionLabel: e.target.value })} placeholder="e.g. Explore, RSVP" />
