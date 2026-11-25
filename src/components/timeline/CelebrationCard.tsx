@@ -16,8 +16,18 @@ export function CelebrationCard({
   onClap?: (item: CelebrationVM) => void
 }) {
   const btnRef = useRef<HTMLButtonElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const myConfettiRef = useRef<confetti.CreateTypes | null>(null)
 
   const firePartyPopper = () => {
+    if (!myConfettiRef.current && canvasRef.current) {
+      myConfettiRef.current = confetti.create(canvasRef.current, {
+        resize: true,
+        useWorker: false,
+      })
+    }
+    const fire = myConfettiRef.current ?? confetti
+
     const rect = btnRef.current?.getBoundingClientRect()
     const origin = rect
       ? {
@@ -29,21 +39,20 @@ export function CelebrationCard({
     const colors = ['#F59E0B', '#FFE066', '#215CE5', '#10B981', '#EC4899', '#0B224E']
 
     // Stage 1: Tight fast upward pop
-    confetti({
+    fire({
       particleCount: 35,
       spread: 60,
       startVelocity: 38,
       decay: 0.91,
       scalar: 0.95,
       ticks: 160,
-      zIndex: 9999,
       origin,
       colors,
     })
 
     // Stage 2: Wide shimmering confetti shower
     setTimeout(() => {
-      confetti({
+      fire({
         particleCount: 55,
         spread: 95,
         startVelocity: 46,
@@ -52,7 +61,6 @@ export function CelebrationCard({
         gravity: 0.95,
         drift: 0.1,
         ticks: 200,
-        zIndex: 9999,
         origin,
         colors,
       })
@@ -68,6 +76,11 @@ export function CelebrationCard({
 
   return (
     <article className="relative overflow-hidden rounded-[var(--radius-card)] border border-[#FDE68A] bg-gradient-to-br from-[#FFFDF7] via-white to-[#FFFBEB] p-4 shadow-[0_4px_16px_rgba(217,119,6,0.08)]">
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-[9999] size-full"
+      />
       <div className="flex items-start justify-between gap-3">
         <div className="inline-flex items-center gap-1.5 rounded-full bg-[#FEF3C7] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#92400E]">
           <Trophy className="size-3.5 text-[#D97706]" aria-hidden="true" />
