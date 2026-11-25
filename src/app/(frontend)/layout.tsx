@@ -11,7 +11,11 @@ export const metadata: Metadata = {
   applicationName: 'MNI Members',
   // Private network: keep every page out of search engines.
   robots: { index: false, follow: false },
-  icons: { icon: '/favicon.svg' },
+  icons: {
+    icon: '/brand/mni-logo.webp',
+    shortcut: '/brand/mni-logo.webp',
+    apple: '/brand/mni-logo.webp',
+  },
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'MNI', statusBarStyle: 'default' },
 }
