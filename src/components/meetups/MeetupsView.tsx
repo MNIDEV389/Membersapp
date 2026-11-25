@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Calendar, Check, Clock, Coffee, MapPin, Plus, Users, X } from 'lucide-react'
+import { ArrowLeft, Calendar, Check, Clock, Coffee, MapPin, Plus, Users, Video, X } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { api, ApiError } from '@/lib/client-api'
@@ -96,8 +96,12 @@ export function MeetupsView({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1 rounded-full bg-pale px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-strong">
-                    <MapPin className="size-3" />
-                    MNI Organised · {m.city}
+                    {m.venue.toLowerCase().includes('google meet') ? (
+                      <Video className="size-3" />
+                    ) : (
+                      <MapPin className="size-3" />
+                    )}
+                    {m.venue.toLowerCase().includes('google meet') ? 'MNI Organised · Online' : 'MNI Organised · NCR'}
                   </span>
                   <time className="text-caption font-semibold text-muted">{formatDate(m.startsAt)}</time>
                 </div>
@@ -106,7 +110,11 @@ export function MeetupsView({
                 {m.description && <p className="mt-1 text-[13.5px] leading-relaxed text-[#1C1C1E]/85">{m.description}</p>}
 
                 <p className="mt-2.5 flex items-center gap-1.5 text-caption font-medium text-muted">
-                  <MapPin className="size-3.5 text-brand" />
+                  {m.venue.toLowerCase().includes('google meet') ? (
+                    <Video className="size-3.5 text-brand" />
+                  ) : (
+                    <MapPin className="size-3.5 text-brand" />
+                  )}
                   {m.venue}
                 </p>
 
