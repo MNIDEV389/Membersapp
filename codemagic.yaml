@@ -37,9 +37,18 @@ workflows:
             -scheme App \
             -destination 'generic/platform=iOS' \
             -configuration Debug \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
+          
+          # Package .app into a clean .ipa structure
+          mkdir -p Payload
+          APP_PATH=$(find build -name "*.app" -type d | head -n 1)
+          cp -r "$APP_PATH" Payload/
+          zip -r MNI-Members-unsigned.ipa Payload
+          cp -r "$APP_PATH" .
+          zip -r MNI-Members-App.zip $(basename "$APP_PATH")
     artifacts:
-      - ios/App/build/**/*.app
-      - build/ios/ipa/*.ipa
+      - ios/App/*.ipa
+      - ios/App/*.zip
