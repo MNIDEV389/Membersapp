@@ -31,11 +31,17 @@ const extraOrigins = (process.env.ALLOWED_ORIGINS || '')
   .filter(Boolean)
 const trustedOrigins = [siteURL, ...extraOrigins]
 
+const isProd = process.env.NODE_ENV === 'production'
 const databaseURI = process.env.DATABASE_URI || ''
 const db = databaseURI.startsWith('postgres')
   ? postgresAdapter({
-      pool: { connectionString: databaseURI, max: 10 },
-      push: true,
+      pool: {
+        connectionString: databaseURI,
+        max: isProd ? 1 : 5,
+        idleTimeoutMillis: 5000,
+        connectionTimeoutMillis: 10000,
+      },
+      push: !isProd,
     })
   : sqliteAdapter({ client: { url: databaseURI || 'file:./mni-dev.db' } })
 
