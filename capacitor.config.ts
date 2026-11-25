@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'MNI Members',
   webDir: 'out',
   server: {
-    url: 'http://192.168.1.5:3000',
+    url: 'https://mni-members-app.vercel.app',
     cleartext: true,
   },
 };
