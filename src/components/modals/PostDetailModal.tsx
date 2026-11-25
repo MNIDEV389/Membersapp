@@ -94,8 +94,9 @@ export function PostDetailModal({
           </button>
         </div>
       }
+      footerClassName="flex-row items-center justify-between bg-[#FAFAFC] px-4 py-3 sm:px-5 sm:py-3"
       footer={
-        <div className="flex items-center justify-between gap-2 border-t border-black/[0.06] bg-[#FAFAFC] px-4 py-3">
+        <>
           <div className="flex items-center gap-2">
             {/* Like button */}
             <button
@@ -161,10 +162,10 @@ export function PostDetailModal({
               )
             )}
           </div>
-        </div>
+        </>
       }
     >
-      <div className="max-h-[65vh] space-y-4 overflow-y-auto px-5 py-4">
+      <div className="space-y-4">
         {post.image && (
           <div className="overflow-hidden rounded-2xl bg-subtle">
             <img

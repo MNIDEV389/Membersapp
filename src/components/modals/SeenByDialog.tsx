@@ -49,7 +49,7 @@ export function SeenByDialog({ open, onClose, postTitle, seenBy, loading }: Prop
         </div>
       }
     >
-      <div className="max-h-[60vh] overflow-y-auto px-5 py-3">
+      <div className="space-y-1">
         {loading ? (
           <div className="py-8 text-center text-label text-muted">
             Loading views…

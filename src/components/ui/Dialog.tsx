@@ -11,6 +11,7 @@ interface DialogProps {
   description?: ReactNode
   children: ReactNode
   footer?: ReactNode
+  footerClassName?: string
   size?: 'sm' | 'md' | 'lg'
   /** Coloured header band (e.g. member profile). */
   header?: ReactNode
@@ -23,7 +24,7 @@ interface DialogProps {
  * restored by the browser, Esc closes, the page behind is inert. Renders as a
  * bottom sheet on phones and a centred card on tablet/desktop.
  */
-export function Dialog({ open, onClose, title, description, children, footer, size = 'md', header, busy }: DialogProps) {
+export function Dialog({ open, onClose, title, description, children, footer, footerClassName, size = 'md', header, busy }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const descId = useId()
@@ -97,7 +98,12 @@ export function Dialog({ open, onClose, title, description, children, footer, si
           )}
           <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
           {footer && (
-            <div className="safe-bottom flex flex-col-reverse gap-2 border-t border-line bg-subtle px-5 pt-3 sm:flex-row sm:justify-end sm:px-6 sm:pb-3">
+            <div
+              className={cn(
+                'safe-bottom flex flex-col-reverse gap-2 border-t border-line bg-subtle px-5 pt-3 sm:flex-row sm:justify-end sm:px-6 sm:pb-3',
+                footerClassName,
+              )}
+            >
               {footer}
             </div>
           )}

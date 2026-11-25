@@ -12,7 +12,7 @@ export const getPgPool = (): pg.Pool => {
       'postgresql://postgres.qqokxbekwplhwdgwxlcv:v56esqPaZuew5L2L@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres'
     globalForDb.pgPool = new Pool({
       connectionString,
-      max: process.env.NODE_ENV === 'production' ? 2 : 5,
+      max: 5,
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 10000,
     })

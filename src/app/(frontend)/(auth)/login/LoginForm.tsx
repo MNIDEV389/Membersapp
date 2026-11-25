@@ -2,7 +2,6 @@
 
 import { ArrowRight, Eye, EyeOff, KeyRound, LockKeyhole, UserRound } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '@/lib/client-api'
 import { Button } from '@/components/ui/Button'
@@ -13,7 +12,6 @@ const inputCls =
   'h-12 w-full rounded-[var(--radius-control)] border bg-white/[0.08] pl-11 pr-4 text-body text-white placeholder:text-on-navy-muted/80 outline-none transition-colors focus:bg-white/[0.12] focus:ring-4'
 
 export function LoginForm({ next }: { next: string }) {
-  const router = useRouter()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -33,8 +31,7 @@ export function LoginForm({ next }: { next: string }) {
     setLoading(true)
     try {
       await api('/api/app/auth/login', { body: { identifier: identifier.trim(), password } })
-      router.replace(next)
-      router.refresh()
+      window.location.assign(next)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Sign-in failed. Please try again.')
       setFieldErrors(err instanceof ApiError ? err.fieldErrors : {})
