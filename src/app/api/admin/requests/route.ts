@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { assertSameOrigin, handler, ok, parseJson, requireApiAdmin } from '@/lib/http'
+import { assertSameOrigin, handler, HttpError, ok, parseJson, requireApiAdmin } from '@/lib/http'
 
 const patchRequestSchema = z.object({
   id: z.number(),
@@ -23,4 +23,20 @@ export const PATCH = handler(async (req) => {
   })
 
   return ok({ ok: true, request: updated })
+})
+
+export const DELETE = handler(async (req) => {
+  assertSameOrigin(req)
+  const { payload } = await requireApiAdmin(req)
+  const { searchParams } = new URL(req.url)
+  const id = Number(searchParams.get('id'))
+  if (!id) throw new HttpError(400, 'Missing request id')
+
+  await payload.delete({
+    collection: 'contact-requests',
+    id,
+    overrideAccess: true,
+  })
+
+  return ok({ ok: true })
 })

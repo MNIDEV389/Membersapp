@@ -39,6 +39,16 @@ export default async function AdminRequestsPage() {
         email: tgt?.email ?? '',
       },
       businessGenerated: Boolean(r.followUp?.businessGenerated),
+      followUp: r.followUp?.recordedAt
+        ? {
+            calledContact: Boolean(r.followUp.calledContact),
+            conversationTookPlace: Boolean(r.followUp.conversationTookPlace),
+            businessGenerated: Boolean(r.followUp.businessGenerated),
+            gaveBusiness: (r.followUp.gaveBusiness as 'gave' | 'did_not_give') ?? null,
+            remarks: r.followUp.remarks ?? null,
+            recordedAt: r.followUp.recordedAt ?? null,
+          }
+        : null,
     }
   })
 

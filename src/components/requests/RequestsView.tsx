@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock, Coffee, Mail, MessageSquareText, Phone, Users } from 'lucide-react'
+import { CheckCircle2, CheckSquare, Clock, Coffee, Mail, MessageSquareText, Phone, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CONTACT_REQUEST_STATUSES } from '@/lib/constants'
 import { formatDate } from '@/lib/format'
@@ -115,21 +115,89 @@ export function RequestsView({ requests }: { requests: ContactRequestVM[] }) {
                   </div>
                 )}
 
+                {/* Follow-up Checklist Section */}
+                {r.contact && !r.followUp && (
+                  <div className="mt-3.5 rounded-2xl border border-amber-200/90 bg-amber-50/70 p-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-start gap-2.5">
+                        <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-800">
+                          <CheckSquare className="size-3.5" />
+                        </div>
+                        <div>
+                          <p className="text-label font-bold text-navy">Follow-up Checklist Required</p>
+                          <p className="text-caption text-muted">
+                            Did you contact {r.target.fullName}? Update your interaction checklist to keep MNI in the loop.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => setFollowUp(r)}
+                        icon={<CheckSquare className="size-3.5" />}
+                      >
+                        Fill Checklist
+                      </Button>
+                    </div>
+                    <div className="mt-2.5 flex flex-wrap gap-2 text-[12px] text-amber-900/80">
+                      <span className="rounded-md bg-white/80 px-2 py-0.5 border border-amber-200/60 font-medium">1. Contacted?</span>
+                      <span className="rounded-md bg-white/80 px-2 py-0.5 border border-amber-200/60 font-medium">2. Had a talk?</span>
+                      <span className="rounded-md bg-white/80 px-2 py-0.5 border border-amber-200/60 font-medium">3. Business explored?</span>
+                      <span className="rounded-md bg-white/80 px-2 py-0.5 border border-amber-200/60 font-medium">4. Referral given?</span>
+                    </div>
+                  </div>
+                )}
+
                 {r.followUp && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    <StatusPill tone={r.followUp.calledContact ? 'success' : 'neutral'}>{r.followUp.calledContact ? 'Called' : 'Not called'}</StatusPill>
-                    {r.followUp.calledContact && (
-                      <StatusPill tone={r.followUp.conversationTookPlace ? 'success' : 'neutral'}>
-                        {r.followUp.conversationTookPlace ? 'Spoke' : 'No conversation'}
-                      </StatusPill>
+                  <div className="mt-3.5 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3.5 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="flex size-5 items-center justify-center rounded-full bg-emerald-600 text-white text-[11px] font-bold">
+                          ✓
+                        </span>
+                        <p className="text-label font-bold text-emerald-950">Follow-up Checklist Completed</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFollowUp(r)}
+                        className="text-caption font-semibold text-brand hover:underline"
+                      >
+                        Update Checklist
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <div className="rounded-xl border border-emerald-100/70 bg-white p-2 text-center">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Contacted</p>
+                        <p className={r.followUp.calledContact ? "text-label font-bold mt-0.5 text-emerald-700" : "text-label font-bold mt-0.5 text-muted"}>
+                          {r.followUp.calledContact ? "✓ Yes" : "✕ No"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-emerald-100/70 bg-white p-2 text-center">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Spoke</p>
+                        <p className={r.followUp.conversationTookPlace ? "text-label font-bold mt-0.5 text-emerald-700" : "text-label font-bold mt-0.5 text-muted"}>
+                          {r.followUp.conversationTookPlace ? "✓ Yes" : "✕ No"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-emerald-100/70 bg-white p-2 text-center">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Business</p>
+                        <p className={r.followUp.businessGenerated ? "text-label font-bold mt-0.5 text-emerald-700" : "text-label font-bold mt-0.5 text-muted"}>
+                          {r.followUp.businessGenerated ? "✓ Generated" : "Not yet"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-emerald-100/70 bg-white p-2 text-center">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Gave Business</p>
+                        <p className={r.followUp.gaveBusiness === 'gave' ? "text-label font-bold mt-0.5 text-brand" : "text-label font-bold mt-0.5 text-muted"}>
+                          {r.followUp.gaveBusiness === 'gave' ? "✓ Yes" : "Not yet"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {r.followUp.remarks && (
+                      <p className="rounded-xl border border-emerald-100/70 bg-white p-2.5 text-label text-ink/90">
+                        <span className="font-semibold text-navy">Remarks: </span>
+                        {r.followUp.remarks}
+                      </p>
                     )}
-                    {r.followUp.conversationTookPlace && (
-                      <StatusPill tone={r.followUp.businessGenerated ? 'success' : 'neutral'}>
-                        {r.followUp.businessGenerated ? 'Business generated' : 'No business yet'}
-                      </StatusPill>
-                    )}
-                    {r.followUp.gaveBusiness === 'gave' && <StatusPill tone="brand">Gave business</StatusPill>}
-                    {r.followUp.remarks && <p className="mt-1 w-full text-label text-muted">“{r.followUp.remarks}”</p>}
                   </div>
                 )}
 
@@ -142,7 +210,9 @@ export function RequestsView({ requests }: { requests: ContactRequestVM[] }) {
                     <p className="text-label text-muted">This member isn’t available for introductions right now.</p>
                   ) : (
                     <>
-                      <p className="text-label text-muted">{r.followUp ? 'Outcome recorded' : 'How did it go?'}</p>
+                      <p className="text-label text-muted">
+                        {r.followUp ? 'Checklist recorded' : 'Please complete the checklist'}
+                      </p>
                       <div className="flex items-center gap-2">
                         {r.contact && (
                           <Button
@@ -160,8 +230,13 @@ export function RequestsView({ requests }: { requests: ContactRequestVM[] }) {
                             Invite 1-on-1
                           </Button>
                         )}
-                        <Button size="sm" variant={r.followUp ? 'secondary' : 'primary'} onClick={() => setFollowUp(r)}>
-                          {r.followUp ? 'Edit outcome' : 'Add follow-up'}
+                        <Button
+                          size="sm"
+                          variant={r.followUp ? 'secondary' : 'primary'}
+                          icon={<CheckSquare className="size-3.5" />}
+                          onClick={() => setFollowUp(r)}
+                        >
+                          {r.followUp ? 'Edit checklist' : 'Update checklist'}
                         </Button>
                       </div>
                     </>
