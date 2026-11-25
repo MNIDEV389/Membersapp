@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { getPgPool } from '@/lib/db'
 import { assertSameOrigin, handler, HttpError, ok, parseJson, requireApiAdmin } from '@/lib/http'
 
 const createMemberSchema = z.object({
@@ -11,6 +12,7 @@ const createMemberSchema = z.object({
   businessCategory: z.string().trim().min(2).max(80),
   tier: z.enum(['freemium', 'premium']).default('freemium'),
   isVerified: z.boolean().default(true),
+  avatarUrl: z.string().trim().optional().nullable(),
   password: z.string().min(8).max(100),
 })
 
@@ -24,6 +26,7 @@ const patchMemberSchema = z.object({
   city: z.string().trim().min(2).max(80).optional(),
   businessName: z.string().trim().min(2).max(120).optional(),
   businessCategory: z.string().trim().min(2).max(80).optional(),
+  avatarUrl: z.string().trim().optional().nullable(),
   password: z.string().min(8).max(100).optional(),
 })
 
@@ -62,6 +65,12 @@ export const POST = handler(async (req) => {
         referralCount: 0,
       },
     })
+
+    if (data.avatarUrl) {
+      const pool = getPgPool()
+      await pool.query('UPDATE members SET custom_avatar = $1 WHERE id = $2', [data.avatarUrl, created.id])
+    }
+
     return ok({ ok: true, member: created })
   } catch (err) {
     throw new HttpError(400, (err as Error).message || 'Could not create member.')
@@ -72,7 +81,7 @@ export const PATCH = handler(async (req) => {
   assertSameOrigin(req)
   const { payload } = await requireApiAdmin(req)
   const data = await parseJson(req, patchMemberSchema)
-  const { id, ...updates } = data
+  const { id, avatarUrl, ...updates } = data
 
   const updated = await payload.update({
     collection: 'members',
@@ -80,6 +89,14 @@ export const PATCH = handler(async (req) => {
     overrideAccess: true,
     data: updates as never,
   })
+
+  if (avatarUrl !== undefined) {
+    const pool = getPgPool()
+    await pool.query('UPDATE members SET custom_avatar = $1, updated_at = NOW() WHERE id = $2', [
+      avatarUrl || null,
+      id,
+    ])
+  }
 
   return ok({ ok: true, member: updated })
 })

@@ -9,6 +9,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { Field, Input, Select } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/components/ui/cn'
+import { AdminImagePicker } from './AdminImagePicker'
 
 export interface AdminMemberRow {
   id: number
@@ -47,6 +48,7 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
     businessName: '',
     businessCategory: 'Technology & SaaS',
     tier: 'freemium' as 'freemium' | 'premium',
+    avatarUrl: null as string | null,
     password: 'Member@MNI2026!',
   })
 
@@ -58,6 +60,7 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
     businessName: '',
     businessCategory: '',
     tier: 'freemium' as 'freemium' | 'premium',
+    avatarUrl: null as string | null,
     newPassword: '',
   })
 
@@ -92,11 +95,16 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
   const createMember = async () => {
     setSaving(true)
     try {
-      const res = await api<{ ok: boolean; member: AdminMemberRow }>('/api/admin/members', { body: form })
+      const res = await api<{ ok: boolean; member: AdminMemberRow }>('/api/admin/members', {
+        body: {
+          ...form,
+          avatarUrl: form.avatarUrl || undefined,
+        },
+      })
       const created = {
         ...res.member,
         avatarInitials: res.member.avatarInitials || form.fullName.slice(0, 2).toUpperCase(),
-        avatarUrl: null,
+        avatarUrl: form.avatarUrl,
       }
       setMembers((prev) => [created, ...prev])
       toast(`${form.fullName} onboarded!`)
@@ -109,6 +117,7 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
         businessName: '',
         businessCategory: 'Technology & SaaS',
         tier: 'freemium',
+        avatarUrl: null,
         password: 'Member@MNI2026!',
       })
     } catch (err) {
@@ -127,6 +136,7 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
       businessName: m.businessName,
       businessCategory: m.businessCategory,
       tier: m.tier,
+      avatarUrl: m.avatarUrl,
       newPassword: '',
     })
   }
@@ -143,6 +153,7 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
         businessName: editForm.businessName,
         businessCategory: editForm.businessCategory,
         tier: editForm.tier,
+        avatarUrl: editForm.avatarUrl,
       }
       if (editForm.newPassword.trim()) payload.password = editForm.newPassword.trim()
 
@@ -158,6 +169,7 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
                 businessName: editForm.businessName,
                 businessCategory: editForm.businessCategory,
                 tier: editForm.tier,
+                avatarUrl: editForm.avatarUrl,
               }
             : m,
         ),
@@ -363,6 +375,15 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
           <Field label="Initial password">
             <Input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           </Field>
+          <div className="sm:col-span-2">
+            <AdminImagePicker
+              label="Profile Photo / Avatar (optional)"
+              value={form.avatarUrl}
+              onChange={(url) => setForm({ ...form, avatarUrl: url })}
+              aspect="square"
+              helperText="Upload member portrait photo (JPG, PNG, WebP) or provide an HTTPS link."
+            />
+          </div>
         </div>
       </Dialog>
 
@@ -384,6 +405,15 @@ export function AdminMembersView({ initialMembers }: { initialMembers: AdminMemb
         }
       >
         <div className="grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <AdminImagePicker
+              label="Profile Photo / Avatar"
+              value={editForm.avatarUrl}
+              onChange={(url) => setEditForm({ ...editForm, avatarUrl: url })}
+              aspect="square"
+              helperText="Update or remove member profile picture. It updates their avatar across the entire directory, timeline, and digital card."
+            />
+          </div>
           <Field label="Full name">
             <Input value={editForm.fullName} onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })} />
           </Field>
