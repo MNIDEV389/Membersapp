@@ -158,6 +158,7 @@ export interface Member {
   id: number;
   fullName: string;
   phone: string;
+  whatsapp?: string | null;
   city: string;
   /**
    * e.g. MNI-002184. Members can sign in with this or their email.
@@ -547,6 +548,7 @@ export interface PayloadMigration {
 export interface MembersSelect<T extends boolean = true> {
   fullName?: T;
   phone?: T;
+  whatsapp?: T;
   city?: T;
   memberId?: T;
   memberSince?: T;
