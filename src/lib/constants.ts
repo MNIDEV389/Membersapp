@@ -2,8 +2,7 @@
 // validation and UI copy. Keep values stable: they are persisted in the DB.
 
 export const MEMBER_TIERS = [
-  { value: 'free', label: 'Free' },
-  { value: 'pro', label: 'Pro' },
+  { value: 'freemium', label: 'Freemium' },
   { value: 'premium', label: 'Premium' },
 ] as const
 export type MemberTier = (typeof MEMBER_TIERS)[number]['value']

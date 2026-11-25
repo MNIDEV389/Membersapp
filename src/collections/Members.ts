@@ -104,7 +104,7 @@ export const Members: CollectionConfig = {
     {
       name: 'tier',
       type: 'select',
-      defaultValue: 'pro',
+      defaultValue: 'freemium',
       options: MEMBER_TIERS.map((t) => ({ label: t.label, value: t.value })),
       access: { update: adminFieldOnly },
     },

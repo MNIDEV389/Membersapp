@@ -28,24 +28,19 @@ export function StatusPill({ tone = 'neutral', children, icon, className }: { to
   )
 }
 
-export function TierBadge({ tier, onNavy }: { tier: string; onNavy?: boolean }) {
-  if (tier === 'premium')
-    return (
-      <span className="inline-flex h-6 items-center gap-1 rounded-full bg-gradient-to-r from-[#c98a12] to-[#a86c08] px-2 text-caption font-bold uppercase tracking-wide text-white">
-        <Star className="size-3 fill-current" aria-hidden="true" />
-        Premium
-      </span>
-    )
-  if (tier === 'pro')
-    return (
-      <span className={cn('inline-flex h-6 items-center gap-1 rounded-full px-2 text-caption font-bold uppercase tracking-wide', onNavy ? 'bg-white text-navy' : 'bg-brand text-white')}>
-        <Sparkles className="size-3" aria-hidden="true" />
-        Pro
-      </span>
-    )
+export function TierBadge({ tier, onNavy }: { tier?: string | null; onNavy?: boolean }) {
+  if (tier !== 'premium') return null
   return (
-    <span className={cn('inline-flex h-6 items-center rounded-full px-2 text-caption font-semibold uppercase tracking-wide ring-1 ring-inset', onNavy ? 'text-white ring-white/30' : 'bg-[#eef1f5] text-[#3d4b5c] ring-[#dbe1e8]')}>
-      Starter
+    <span
+      className={cn(
+        'inline-flex h-5 items-center gap-1 rounded-full px-2 text-[10.5px] font-extrabold uppercase tracking-wider shadow-sm',
+        onNavy
+          ? 'bg-gradient-to-r from-[#FFE066] to-[#F59E0B] text-[#78350F]'
+          : 'bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-white',
+      )}
+    >
+      <Star className="size-3 fill-current" aria-hidden="true" />
+      Premium
     </span>
   )
 }

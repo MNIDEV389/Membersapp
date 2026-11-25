@@ -45,7 +45,7 @@ export function toPublicMember(m: Member): PublicMember {
     city: m.city,
     memberSince: m.memberSince ?? null,
     memberId: m.memberId,
-    tier: (m.tier ?? 'pro') as MemberTier,
+    tier: (m.tier ?? 'freemium') as MemberTier,
     isVerified: m.isVerified !== false,
     bio: m.bio ?? null,
     whatWeDo: m.whatWeDo ?? null,
