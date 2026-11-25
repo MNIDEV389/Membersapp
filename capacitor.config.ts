@@ -5,8 +5,7 @@ const config: CapacitorConfig = {
   appName: 'MNI Members',
   webDir: 'out',
   server: {
-    // For local dev / testing or point to production URL
-    url: process.env.CAPACITOR_SERVER_URL || undefined,
+    url: 'http://192.168.1.5:3000',
     cleartext: true,
   },
 };
