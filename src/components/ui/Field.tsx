@@ -10,24 +10,24 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ChevronsUpDown } from 'lucide-react'
 import { cn } from './cn'
 
 const control =
-  'w-full rounded-[var(--radius-control)] border bg-surface px-3.5 text-body text-ink placeholder:text-muted/75 transition-colors focus:outline-none focus:ring-4 disabled:bg-subtle disabled:text-muted'
+  'w-full rounded-xl border bg-[#F4F5F8] px-3.5 text-[15px] text-[#1C1C1E] placeholder:text-[#8E8E93] transition-all duration-150 focus:outline-none disabled:bg-[#E5E5EA] disabled:text-[#8E8E93]'
 const controlState = (invalid?: boolean) =>
   invalid
-    ? 'border-danger focus:border-danger focus:ring-danger/15'
-    : 'border-line-strong hover:border-[#a9b6c6] focus:border-brand focus:ring-brand/15'
+    ? 'border-[#FF3B30] bg-white focus:border-[#FF3B30] focus:ring-[3.5px] focus:ring-[#FF3B30]/15'
+    : 'border-black/[0.08] hover:border-black/20 focus:border-[#007AFF] focus:bg-white focus:ring-[3.5px] focus:ring-[#007AFF]/15'
 
 export function Input({ invalid, className, ...props }: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
-  return <input className={cn(control, controlState(invalid), 'h-12', className)} aria-invalid={invalid || undefined} {...props} />
+  return <input className={cn(control, controlState(invalid), 'h-11 sm:h-12', className)} aria-invalid={invalid || undefined} {...props} />
 }
 
 export function Textarea({ invalid, className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
   return (
     <textarea
-      className={cn(control, controlState(invalid), 'min-h-28 resize-y py-3 leading-6', className)}
+      className={cn(control, controlState(invalid), 'min-h-24 resize-y py-2.5 leading-relaxed', className)}
       aria-invalid={invalid || undefined}
       {...props}
     />
@@ -36,18 +36,23 @@ export function Textarea({ invalid, className, ...props }: TextareaHTMLAttribute
 
 export function Select({ invalid, className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
   return (
-    <select
-      className={cn(
-        control,
-        controlState(invalid),
-        "h-12 appearance-none bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23536477' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")] bg-[right_0.875rem_center] bg-no-repeat pr-10",
-        className,
-      )}
-      aria-invalid={invalid || undefined}
-      {...props}
-    >
-      {children}
-    </select>
+    <div className="relative w-full">
+      <select
+        className={cn(
+          control,
+          controlState(invalid),
+          'h-11 sm:h-12 cursor-pointer appearance-none pr-10 font-medium',
+          className,
+        )}
+        aria-invalid={invalid || undefined}
+        {...props}
+      >
+        {children}
+      </select>
+      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-[#8E8E93]">
+        <ChevronsUpDown className="size-4" strokeWidth={2} aria-hidden="true" />
+      </div>
+    </div>
   )
 }
 
@@ -81,25 +86,25 @@ export function Field({ label, hint, error, required, optional, counter, classNa
   return (
     <div className={cn('space-y-1.5', className)}>
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-label font-semibold text-ink">
+        <label htmlFor={id} className="text-[13px] font-semibold tracking-tight text-[#1C1C1E]">
           {label}
-          {required && <span className="text-danger" aria-hidden="true"> *</span>}
-          {optional && <span className="font-normal text-muted"> (optional)</span>}
+          {required && <span className="text-[#FF3B30]" aria-hidden="true"> *</span>}
+          {optional && <span className="font-normal text-[#8E8E93]"> (optional)</span>}
         </label>
         {counter && (
-          <span className={cn('text-caption tabular-nums', counter.value > counter.max ? 'text-danger' : 'text-muted')}>
+          <span className={cn('text-[12px] tabular-nums font-medium', counter.value > counter.max ? 'text-[#FF3B30]' : 'text-[#8E8E93]')}>
             {counter.value}/{counter.max}
           </span>
         )}
       </div>
       {control}
       {error ? (
-        <p id={errorId} className="flex items-start gap-1.5 text-label text-danger">
+        <p id={errorId} className="flex items-start gap-1 text-[12px] font-medium text-[#FF3B30]">
           <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-caption text-muted">
+        <p id={hintId} className="text-[12px] text-[#8E8E93]">
           {hint}
         </p>
       ) : null}

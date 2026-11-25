@@ -8,7 +8,7 @@
  * the canvas (#F3F6F8) and white surfaces.
  */
 @theme {
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
   --color-brand: #215ce5;
   --color-brand-strong: #1a4bc4;

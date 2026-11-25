@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, CheckCircle2, Send } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, Send } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { api, ApiError } from '@/lib/client-api'
@@ -66,19 +66,19 @@ export function LoginHelpForm({ initialReason }: { initialReason: Reason }) {
 
   if (done) {
     return (
-      <div className="rounded-[var(--radius-panel)] bg-surface p-7 text-center text-ink shadow-raised">
-        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-success-bg text-success">
+      <div className="rounded-[24px] bg-white p-7 text-center text-[#1C1C1E] shadow-[0_20px_50px_rgba(0,0,0,0.22)]">
+        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#E7F5F0] text-[#167C60]">
           <CheckCircle2 className="size-7" aria-hidden="true" />
         </div>
-        <h1 className="mt-4 text-section font-bold text-navy">Request received</h1>
-        <p className="mt-2 text-body text-muted">
+        <h1 className="mt-4 text-[20px] font-bold tracking-tight text-[#102C60]">Request received</h1>
+        <p className="mt-2 text-[14px] leading-relaxed text-[#536477]">
           Thanks, {form.fullName.split(' ')[0]}. MNI administration will verify your details and send your login
-          information to <span className="font-semibold text-ink">{form.email}</span> or WhatsApp.
+          information to <span className="font-semibold text-[#1C1C1E]">{form.email}</span> or WhatsApp.
         </p>
-        <p className="mt-3 text-label text-muted">This usually takes up to one working day.</p>
+        <p className="mt-3 text-[12px] text-[#8E8E93]">This usually takes up to one working day.</p>
         <Link
           href="/login"
-          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-control)] bg-brand font-semibold text-white hover:bg-brand-strong"
+          className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#007AFF] font-semibold text-white shadow-[0_4px_14px_rgba(0,122,255,0.32)] transition-all hover:bg-[#0066E0] active:scale-[0.98]"
         >
           Back to sign in
         </Link>
@@ -87,15 +87,15 @@ export function LoginHelpForm({ initialReason }: { initialReason: Reason }) {
   }
 
   return (
-    <div className="flex h-[78dvh] max-h-[620px] min-h-[460px] w-full flex-col overflow-hidden rounded-[var(--radius-panel)] bg-surface text-ink shadow-raised sm:h-[640px]">
-      {/* Top Header - Fixed inside card */}
-      <div className="shrink-0 border-b border-black/[0.06] px-5 pt-4 pb-3 sm:px-6">
-        <Link href="/login" className="-ml-1 inline-flex items-center gap-1.5 rounded-lg px-1 text-label font-semibold text-muted hover:text-navy">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Back to sign in
+    <div className="flex h-[78dvh] max-h-[620px] min-h-[460px] w-full flex-col overflow-hidden rounded-[24px] bg-white text-[#1C1C1E] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-white/20 sm:h-[640px]">
+      {/* Top Header - Apple HIG Navigation Bar */}
+      <div className="shrink-0 border-b border-[#F2F2F7] px-5 pt-4 pb-3 sm:px-6">
+        <Link href="/login" className="-ml-1.5 inline-flex items-center gap-0.5 text-[15px] font-medium text-[#007AFF] hover:opacity-75 transition-opacity">
+          <ChevronLeft className="size-5" strokeWidth={2.4} aria-hidden="true" />
+          <span>Sign in</span>
         </Link>
-        <h1 className="mt-1.5 text-title font-bold text-navy">Request login details</h1>
-        <p className="mt-0.5 text-caption text-muted">
+        <h1 className="mt-1.5 text-[22px] sm:text-[24px] font-bold tracking-tight text-[#1C1C1E]">Request login details</h1>
+        <p className="mt-0.5 text-[13px] leading-snug text-[#8E8E93]">
           MNI is invite-only. Share your details to verify your membership and get login access.
         </p>
       </div>
@@ -103,7 +103,7 @@ export function LoginHelpForm({ initialReason }: { initialReason: Reason }) {
       <form onSubmit={onSubmit} noValidate className="flex flex-1 flex-col overflow-hidden">
         {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 sm:px-6">
-          {formError && <p role="alert" className="rounded-xl bg-danger-bg px-4 py-3 text-label text-danger">{formError}</p>}
+          {formError && <p role="alert" className="rounded-xl bg-[#FDECEA] px-3.5 py-2.5 text-[13px] text-[#FF3B30]">{formError}</p>}
 
           <Field label="What do you need help with?" required>
             <Select value={form.issueType} onChange={set('issueType')} id="lh-issueType">
@@ -124,10 +124,29 @@ export function LoginHelpForm({ initialReason }: { initialReason: Reason }) {
             <Input id="lh-phone" type="tel" autoComplete="tel" inputMode="tel" value={form.phone} onChange={set('phone')} placeholder="+91 98765 43210" />
           </Field>
 
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-label text-ink">
-            <input type="checkbox" checked={sameWhatsapp} onChange={(e) => setSameWhatsapp(e.target.checked)} className="size-5 rounded accent-brand" />
-            My WhatsApp number is the same
-          </label>
+          {/* Apple iOS Switch Toggle */}
+          <div className="flex items-center justify-between rounded-xl bg-[#F4F5F8] px-3.5 py-3 border border-black/[0.06]">
+            <div className="space-y-0.5 pr-3">
+              <p className="text-[14px] font-medium text-[#1C1C1E]">WhatsApp number is same</p>
+              <p className="text-[12px] text-[#8E8E93]">Use mobile number for WhatsApp verification</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={sameWhatsapp}
+              onClick={() => setSameWhatsapp(!sameWhatsapp)}
+              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                sameWhatsapp ? 'bg-[#007AFF]' : 'bg-[#D1D1D6]'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block size-6 transform rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.2)] ring-0 transition duration-200 ease-in-out ${
+                  sameWhatsapp ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           {!sameWhatsapp && (
             <Field label="WhatsApp number" error={errors.whatsapp}>
               <Input id="lh-whatsapp" type="tel" inputMode="tel" value={form.whatsapp} onChange={set('whatsapp')} placeholder="+91 98765 43210" />
@@ -141,7 +160,7 @@ export function LoginHelpForm({ initialReason }: { initialReason: Reason }) {
             <Textarea id="lh-details" rows={3} value={form.details} onChange={set('details')} placeholder="Your chapter, who introduced you, or details about the issue" />
           </Field>
 
-          {/* Honeypot (hidden from people and assistive tech) */}
+          {/* Honeypot */}
           <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
             <label>
               Website
@@ -150,12 +169,20 @@ export function LoginHelpForm({ initialReason }: { initialReason: Reason }) {
           </div>
         </div>
 
-        {/* Static Bottom Action Bar - Fixed at bottom of card */}
-        <div className="shrink-0 border-t border-black/[0.06] bg-surface/95 px-5 py-3.5 backdrop-blur-sm sm:px-6">
-          <Button type="submit" size="lg" fullWidth loading={loading} loadingText="Sending…" icon={<Send className="size-[18px]" aria-hidden="true" />}>
+        {/* Static Bottom Action Bar - Apple HIG style */}
+        <div className="shrink-0 border-t border-[#F2F2F7] bg-white/95 px-5 py-3.5 backdrop-blur-md sm:px-6">
+          <Button
+            type="submit"
+            size="lg"
+            fullWidth
+            loading={loading}
+            loadingText="Sending…"
+            className="h-12 rounded-xl bg-[#007AFF] hover:bg-[#0066E0] active:scale-[0.98] text-[16px] font-semibold tracking-tight text-white shadow-[0_4px_14px_rgba(0,122,255,0.32)] transition-all duration-150"
+            icon={<Send className="size-4" strokeWidth={2.2} aria-hidden="true" />}
+          >
             Send request
           </Button>
-          <p className="mt-1.5 text-center text-caption text-muted">Your details are only shared with MNI administration.</p>
+          <p className="mt-1.5 text-center text-[12px] text-[#8E8E93]">Your details are only shared with MNI administration.</p>
         </div>
       </form>
     </div>
