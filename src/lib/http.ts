@@ -2,7 +2,7 @@ import 'server-only'
 import { NextResponse } from 'next/server'
 import { headers as nextHeaders } from 'next/headers'
 import type { ZodSchema } from 'zod'
-import type { Member } from '@/payload-types'
+import type { Admin, Member } from '@/payload-types'
 import { getPayloadClient } from './payload'
 
 export class HttpError extends Error {
@@ -85,6 +85,26 @@ export async function requireApiMember(req: Request) {
     throw new HttpError(401, 'Please sign in to continue.')
   }
   return { payload, member: user as Member & { collection: 'members' } }
+}
+
+/** Authenticate the request as an MNI Admin (`admins` collection). */
+export async function requireApiAdmin(req: Request) {
+  const payload = await getPayloadClient()
+  let authResult: { user?: unknown } | null = null
+  try {
+    const nh = await nextHeaders()
+    authResult = await payload.auth({ headers: nh })
+  } catch {
+    // fallback to req.headers
+  }
+  if (!authResult?.user) {
+    authResult = await payload.auth({ headers: req.headers }).catch(() => null)
+  }
+  const user = authResult?.user as Admin | null
+  if (!user || (user as { collection?: string }).collection !== 'admins') {
+    throw new HttpError(401, 'Admin authentication required.')
+  }
+  return { payload, admin: user as Admin & { collection: 'admins' } }
 }
 
 export function clientIp(req: Request) {
