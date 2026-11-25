@@ -474,6 +474,13 @@ export async function getDirectoryMembers(me: Me): Promise<DirectoryMemberVM[]> 
     myRequests.docs.map((r) => String(typeof r.targetMember === 'object' ? r.targetMember.id : r.targetMember)),
   )
 
+  const STOP_WORDS = new Set([
+    'business', 'businesses', 'company', 'companies', 'service', 'services', 'solution', 'solutions',
+    'india', 'indian', 'growth', 'growing', 'client', 'clients', 'looking', 'member', 'members',
+    'network', 'curated', 'partner', 'partners', 'operations', 'management', 'team', 'teams',
+    'with', 'that', 'this', 'from', 'your', 'their', 'about', 'into', 'across', 'want', 'would', 'like',
+  ])
+
   const myKeywords = [
     me.businessCategory,
     me.whatWeDo,
@@ -486,7 +493,7 @@ export async function getDirectoryMembers(me: Me): Promise<DirectoryMemberVM[]> 
     .join(' ')
     .toLowerCase()
     .split(/[^a-z0-9]+/)
-    .filter((w) => w.length >= 4)
+    .filter((w) => w.length >= 4 && !STOP_WORDS.has(w))
 
   const myKeywordSet = new Set(myKeywords)
 
@@ -500,11 +507,11 @@ export async function getDirectoryMembers(me: Me): Promise<DirectoryMemberVM[]> 
     let matchReason: string | null = null
     if (doc.id !== me.id) {
       if (pub.city && me.city && pub.city.toLowerCase() === me.city.toLowerCase()) {
-        matchReason = `Same chapter (${pub.city})`
+        matchReason = `Same city: ${pub.city}`
       }
       const matchedWord = [...myKeywordSet].find((w) => targetText.includes(w))
       if (matchedWord) {
-        matchReason = `Matches "${matchedWord}" in ideal client / needs`
+        matchReason = `Shared focus: ${matchedWord}`
       }
     }
 

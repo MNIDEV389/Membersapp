@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Briefcase, Check, Info, MapPin, Search, Sparkles, UserPlus, Users } from 'lucide-react'
+import { ArrowLeft, Briefcase, Check, Info, MapPin, Search, Target, UserPlus, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { DirectoryMemberVM } from '@/lib/view-models'
@@ -156,8 +156,8 @@ export function DirectoryView({
 
       {subTab === 'matchmaking' && (
         <div className="flex items-center gap-2.5 rounded-2xl bg-pale/70 px-4 py-3 text-caption font-medium text-navy ring-1 ring-inset ring-brand/20">
-          <Sparkles className="size-4 shrink-0 text-brand" aria-hidden="true" />
-          <span>Members matched by your chapter city, ideal client profile, and target connections.</span>
+          <Target className="size-4 shrink-0 text-brand" aria-hidden="true" />
+          <span>Members matched by your city, category, and ideal-client profile keywords.</span>
         </div>
       )}
 
@@ -199,7 +199,7 @@ export function DirectoryView({
 
                 {m.matchReason && (
                   <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-pale px-2.5 py-1 text-[11.5px] font-semibold text-brand-strong">
-                    <Sparkles className="size-3" aria-hidden="true" />
+                    <Target className="size-3" aria-hidden="true" />
                     {m.matchReason}
                   </p>
                 )}
