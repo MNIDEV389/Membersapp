@@ -241,7 +241,14 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
       </nav>
       <p className="pb-2 text-center text-caption text-muted">To change your email or login details, contact MNI support.</p>
 
-      <EditProfileDialog open={editing} onClose={() => setEditing(false)} profile={profile} pendingChanges={pending?.changes ?? null} />
+      <EditProfileDialog
+        open={editing}
+        onClose={() => setEditing(false)}
+        profile={profile}
+        currentAvatarUrl={avatarUrl}
+        onAvatarUpdated={(newUrl) => setAvatarUrl(newUrl)}
+        pendingChanges={pending?.changes ?? null}
+      />
 
       <Dialog
         open={confirmLogout}

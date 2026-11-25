@@ -37,7 +37,21 @@ const fromProfile = (p: SelfProfile, pending: Record<string, string> | null): Fo
   return { ...base, ...(pending ?? {}) }
 }
 
-export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { open: boolean; onClose: () => void; profile: SelfProfile; pendingChanges: Record<string, string> | null }) {
+export function EditProfileDialog({
+  open,
+  onClose,
+  profile,
+  currentAvatarUrl,
+  onAvatarUpdated,
+  pendingChanges,
+}: {
+  open: boolean
+  onClose: () => void
+  profile: SelfProfile
+  currentAvatarUrl: string | null
+  onAvatarUpdated: (url: string | null) => void
+  pendingChanges: Record<string, string> | null
+}) {
   const router = useRouter()
   const toast = useToast()
   const [form, setForm] = useState<FormState>(() => fromProfile(profile, pendingChanges))
@@ -45,7 +59,7 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
     const w = pendingChanges?.whatsapp ?? profile.whatsapp ?? ''
     return !w || w === profile.phone
   })
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatarUrl)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
@@ -56,11 +70,11 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
       setForm(fromProfile(profile, pendingChanges))
       const w = pendingChanges?.whatsapp ?? profile.whatsapp ?? ''
       setSameWhatsapp(!w || w === profile.phone)
-      setAvatarUrl(profile.avatarUrl)
+      setAvatarUrl(currentAvatarUrl)
       setErrors({})
       setFormError(null)
     }
-  }, [open, profile, pendingChanges])
+  }, [open, profile, pendingChanges, currentAvatarUrl])
 
   const handlePhotoUpload = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -97,13 +111,15 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
         ctx.drawImage(img, 0, 0, w, h)
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
         setAvatarUrl(dataUrl)
+        onAvatarUpdated(dataUrl)
         try {
           await api('/api/app/profile/avatar', { body: { avatarUrl: dataUrl } })
           toast('Profile picture updated successfully!')
           router.refresh()
         } catch (err) {
           toast((err as Error).message || 'Failed to update photo.', 'error')
-          setAvatarUrl(profile.avatarUrl)
+          setAvatarUrl(currentAvatarUrl)
+          onAvatarUpdated(currentAvatarUrl)
         } finally {
           setUploadingPhoto(false)
         }
@@ -118,6 +134,7 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
     try {
       await api('/api/app/profile/avatar', { body: { remove: true } })
       setAvatarUrl(null)
+      onAvatarUpdated(null)
       toast('Profile photo removed.')
       router.refresh()
     } catch (err) {
