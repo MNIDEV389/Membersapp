@@ -80,6 +80,7 @@ const websiteSchema = z
 export const profileChangeSchema = z.object({
   fullName: trimmed(2, 120, 'Full name'),
   phone: phoneSchema,
+  whatsapp: z.union([phoneSchema, z.literal('')]).optional().default(''),
   city: trimmed(2, 120, 'City'),
   businessName: trimmed(2, 160, 'Business name'),
   businessCategory: trimmed(2, 160, 'Business category'),

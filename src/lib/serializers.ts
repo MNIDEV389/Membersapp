@@ -63,6 +63,7 @@ export function toSelfProfile(m: Member): SelfProfile {
     ...toPublicMember(m),
     email: m.email,
     phone: m.phone ?? '',
+    whatsapp: (m as any).whatsapp ?? null,
     additionalNotes: m.additionalNotes ?? null,
     mniCoins: m.mniCoins ?? 0,
     referralCount: m.referralCount ?? 0,

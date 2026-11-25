@@ -4,7 +4,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { profileChangeSchema } from '@/lib/schemas'
 
 const LABELS: Record<string, string> = {
-  fullName: 'Full name', phone: 'Phone', city: 'City', businessName: 'Business name',
+  fullName: 'Full name', phone: 'Phone', whatsapp: 'WhatsApp', city: 'City', businessName: 'Business name',
   businessCategory: 'Business category', websiteUrl: 'Website', whatWeDo: 'What we do',
   keyProductService: 'Key product or service', idealClient: 'Ideal client',
   opportunityLookingFor: 'Opportunity looking for', targetConnections: 'Target connections',

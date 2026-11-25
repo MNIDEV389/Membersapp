@@ -38,6 +38,7 @@ export interface PublicMember {
 export interface SelfProfile extends PublicMember {
   email: string
   phone: string
+  whatsapp?: string | null
   additionalNotes: string | null
   mniCoins: number
   referralCount: number

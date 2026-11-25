@@ -87,6 +87,7 @@ export const COINS_PER_REFERRAL = 500
 export const EDITABLE_PROFILE_FIELDS = [
   'fullName',
   'phone',
+  'whatsapp',
   'city',
   'businessName',
   'businessCategory',

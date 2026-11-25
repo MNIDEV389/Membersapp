@@ -81,6 +81,12 @@ export const Members: CollectionConfig = {
       maxLength: 32,
       access: { read: adminOrSelfField },
     },
+    {
+      name: 'whatsapp',
+      type: 'text',
+      maxLength: 32,
+      access: { read: adminOrSelfField },
+    },
     { name: 'city', type: 'text', required: true, maxLength: 120 },
     {
       name: 'memberId',

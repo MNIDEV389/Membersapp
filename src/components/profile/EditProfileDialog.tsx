@@ -18,6 +18,7 @@ const fromProfile = (p: SelfProfile, pending: Record<string, string> | null): Fo
   const base: FormState = {
     fullName: p.fullName,
     phone: p.phone,
+    whatsapp: p.whatsapp ?? '',
     city: p.city,
     businessName: p.businessName,
     businessCategory: p.businessCategory,
@@ -38,6 +39,10 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
   const router = useRouter()
   const toast = useToast()
   const [form, setForm] = useState<FormState>(() => fromProfile(profile, pendingChanges))
+  const [sameWhatsapp, setSameWhatsapp] = useState(() => {
+    const w = pendingChanges?.whatsapp ?? profile.whatsapp ?? ''
+    return !w || w === profile.phone
+  })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -45,6 +50,8 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
   useEffect(() => {
     if (open) {
       setForm(fromProfile(profile, pendingChanges))
+      const w = pendingChanges?.whatsapp ?? profile.whatsapp ?? ''
+      setSameWhatsapp(!w || w === profile.phone)
       setErrors({})
       setFormError(null)
     }
@@ -106,6 +113,33 @@ export function EditProfileDialog({ open, onClose, profile, pendingChanges }: { 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Full name" required error={errors.fullName}><Input id="pf-fullName" autoComplete="name" value={form.fullName} onChange={set('fullName')} /></Field>
             <Field label="Phone" required error={errors.phone}><Input id="pf-phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} /></Field>
+            <div className="flex items-center justify-between rounded-xl bg-[#F4F5F8] px-3.5 py-2.5 border border-black/[0.06] self-end">
+              <span className="text-[13px] font-medium text-[#1C1C1E]">WhatsApp is same</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={sameWhatsapp}
+                onClick={() => {
+                  const next = !sameWhatsapp
+                  setSameWhatsapp(next)
+                  if (next) setForm((f) => ({ ...f, whatsapp: '' }))
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  sameWhatsapp ? 'bg-[#007AFF]' : 'bg-[#D1D1D6]'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.2)] ring-0 transition duration-200 ease-in-out ${
+                    sameWhatsapp ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            {!sameWhatsapp && (
+              <Field label="WhatsApp contact" error={errors.whatsapp} className="sm:col-span-2">
+                <Input id="pf-whatsapp" type="tel" inputMode="tel" value={form.whatsapp} onChange={set('whatsapp')} placeholder="+91 98765 43210" />
+              </Field>
+            )}
             <Field label="Business name" required error={errors.businessName}><Input id="pf-businessName" autoComplete="organization" value={form.businessName} onChange={set('businessName')} /></Field>
             <Field label="Business category" required error={errors.businessCategory}><Input id="pf-businessCategory" value={form.businessCategory} onChange={set('businessCategory')} placeholder="e.g. Commercial print & packaging" /></Field>
             <Field label="Chapter city" required error={errors.city}><Input id="pf-city" autoComplete="address-level2" value={form.city} onChange={set('city')} /></Field>

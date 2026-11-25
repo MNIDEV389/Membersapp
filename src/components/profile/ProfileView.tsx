@@ -1,6 +1,6 @@
 'use client'
 
-import { Award, Briefcase, CalendarClock, ChevronRight, Compass, ExternalLink, HelpCircle, KeyRound, LogOut, Mail, MapPin, PencilLine, Phone, Sparkles, Target, Trophy } from 'lucide-react'
+import { Award, Briefcase, CalendarClock, ChevronRight, Compass, ExternalLink, HelpCircle, KeyRound, LogOut, Mail, MapPin, MessageCircle, PencilLine, Phone, Sparkles, Target, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
@@ -140,6 +140,9 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
             <dl className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-card">
               <AccountRow icon={<Mail />} label="Email" value={profile.email} />
               <AccountRow icon={<Phone />} label="Phone" value={profile.phone} />
+              {profile.whatsapp && profile.whatsapp !== profile.phone && (
+                <AccountRow icon={<MessageCircle className="text-[#25D366]" />} label="WhatsApp" value={profile.whatsapp} />
+              )}
               <AccountRow icon={<MapPin />} label="Chapter" value={profile.city} />
               <AccountRow icon={<Award />} label="Member ID" value={profile.memberId} />
               {profile.memberSince && <AccountRow icon={<CalendarClock />} label="Member since" value={profile.memberSince} />}
