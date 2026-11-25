@@ -10,7 +10,7 @@ export default async function LoginHelpPage({ searchParams }: { searchParams: Pr
   const { reason } = await searchParams
   const initialReason = (REASONS as readonly string[]).includes(reason ?? '') ? (reason as (typeof REASONS)[number]) : 'new_credentials'
   return (
-    <AuthShell>
+    <AuthShell compactLogo>
       <LoginHelpForm initialReason={initialReason} />
     </AuthShell>
   )
