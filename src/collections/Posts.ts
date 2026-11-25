@@ -48,7 +48,7 @@ export const Posts: CollectionConfig = {
       type: 'text',
       admin: { description: 'Optional external https image (used when no upload is set).' },
       validate: (value: string | null | undefined) =>
-        !value || /^https:\/\/\S+$/i.test(value) || 'Image URL must start with https://',
+        !value || /^(https?:\/\/|data:image\/)/i.test(value) || 'Image URL must start with https:// or be an uploaded image',
     },
     { name: 'imageAlt', type: 'text', maxLength: 200 },
     { name: 'taggedMember', type: 'relationship', relationTo: 'members' },

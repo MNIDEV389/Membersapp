@@ -8,6 +8,7 @@ const postSchema = z.object({
   postType: z.enum(['image_only', 'text_only', 'image_text']).default('text_only'),
   badgeText: z.string().trim().max(60).optional(),
   content: z.string().trim().max(5000).optional(),
+  imageUrl: z.string().trim().optional().nullable(),
   taggedMemberId: z.number().nullable().optional(),
   status: z.enum(['draft', 'published']).default('published'),
   displayOrder: z.number().default(100),
@@ -20,15 +21,18 @@ export const POST = handler(async (req) => {
   const { payload } = await requireApiAdmin(req)
   const data = await parseJson(req, postSchema)
 
+  const effectivePostType = data.imageUrl ? (data.postType === 'image_only' ? 'image_only' : 'image_text') : data.postType
+
   const created = await payload.create({
     collection: 'posts',
     overrideAccess: true,
     data: {
       title: data.title,
       category: data.category,
-      postType: data.postType,
+      postType: effectivePostType,
       badgeText: data.badgeText || undefined,
       content: data.content || undefined,
+      imageUrl: data.imageUrl || undefined,
       taggedMember: data.taggedMemberId || undefined,
       isPublished: data.status === 'published',
       displayOrder: data.displayOrder,

@@ -21,12 +21,15 @@ export default async function AdminPostsPage() {
 
   const posts: AdminPostRow[] = postsRes.docs.map((p) => {
     const m = typeof p.taggedMember === 'object' ? p.taggedMember : null
+    const imgObj = typeof p.image === 'object' && p.image ? p.image : null
+    const imgUrl = (imgObj?.sizes?.thumb?.url || imgObj?.sizes?.card?.url || imgObj?.url || p.imageUrl) ?? null
     return {
       id: p.id,
       title: p.title,
       category: p.category,
       status: (p.isPublished ? 'published' : 'draft'),
       content: p.content ?? null,
+      imageUrl: imgUrl,
       taggedMemberName: m?.fullName ?? null,
       taggedMemberId: m?.id ?? null,
       displayOrder: p.displayOrder ?? 100,

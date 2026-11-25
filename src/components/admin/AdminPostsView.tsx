@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, Heart, Plus, Trash2 } from 'lucide-react'
+import { Eye, Heart, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { POST_CATEGORIES } from '@/lib/constants'
 import { api, ApiError } from '@/lib/client-api'
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Field, Input, Select, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
+import { AdminImagePicker } from './AdminImagePicker'
 
 export interface AdminPostRow {
   id: number
@@ -17,6 +18,7 @@ export interface AdminPostRow {
   category: (typeof POST_CATEGORIES)[number]
   status: 'draft' | 'published'
   content: string | null
+  imageUrl: string | null
   taggedMemberName: string | null
   taggedMemberId: number | null
   displayOrder: number
@@ -40,6 +42,7 @@ export function AdminPostsView({
     title: '',
     category: 'Announcement' as (typeof POST_CATEGORIES)[number],
     content: '',
+    imageUrl: null as string | null,
     taggedMemberId: '',
     status: 'published' as 'draft' | 'published',
     displayOrder: '50',
@@ -56,8 +59,9 @@ export function AdminPostsView({
         body: {
           title: form.title.trim(),
           category: form.category,
-          postType: 'text_only',
+          postType: form.imageUrl ? 'image_text' : 'text_only',
           content: form.content.trim() || undefined,
+          imageUrl: form.imageUrl || undefined,
           taggedMemberId: form.taggedMemberId ? Number(form.taggedMemberId) : null,
           status: form.status,
           displayOrder: Number(form.displayOrder) || 50,
@@ -71,6 +75,7 @@ export function AdminPostsView({
           category: form.category,
           status: form.status,
           content: form.content.trim() || null,
+          imageUrl: form.imageUrl,
           taggedMemberName: m ? m.fullName : null,
           taggedMemberId: m ? m.id : null,
           displayOrder: Number(form.displayOrder) || 50,
@@ -80,9 +85,17 @@ export function AdminPostsView({
         },
         ...prev,
       ])
-      toast('Post created!')
+      toast('Post published to feed!')
       setCreateOpen(false)
-      setForm({ title: '', category: 'Announcement', content: '', taggedMemberId: '', status: 'published', displayOrder: '50' })
+      setForm({
+        title: '',
+        category: 'Announcement',
+        content: '',
+        imageUrl: null,
+        taggedMemberId: '',
+        status: 'published',
+        displayOrder: '50',
+      })
     } catch (err) {
       toast((err as ApiError).message || 'Failed to create post', 'error')
     } finally {
@@ -123,48 +136,76 @@ export function AdminPostsView({
         </Button>
       </header>
 
-      <div className="space-y-3">
-        {posts.map((p) => (
-          <div key={p.id} className="rounded-2xl border border-black/[0.06] bg-surface p-4 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill tone={p.status === 'published' ? 'success' : 'neutral'}>{p.status}</StatusPill>
-                  <StatusPill tone="brand">{p.category}</StatusPill>
-                  {p.taggedMemberName && <span className="text-caption font-semibold text-navy">· {p.taggedMemberName}</span>}
-                </div>
-                <h2 className="mt-2 text-[15.5px] font-bold text-navy">{p.title}</h2>
-                {p.content && <p className="mt-1 line-clamp-2 text-label text-muted">{p.content}</p>}
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button size="sm" variant="secondary" onClick={() => toggleStatus(p)}>
-                  {p.status === 'published' ? 'Unpublish' : 'Publish'}
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => removePost(p.id)}
-                  className="grid size-8 place-items-center rounded-full text-danger hover:bg-danger-bg"
-                  aria-label="Delete post"
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-center gap-4 border-t border-line pt-2.5 text-caption font-semibold text-muted">
-              <span className="inline-flex items-center gap-1">
-                <Heart className="size-3.5 text-[#FF2D55]" />
-                {p.likesCount} likes
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Eye className="size-3.5 text-[#007AFF]" />
-                {p.viewsCount} views
-              </span>
-              {p.publishedAt && <span>Published {formatDate(p.publishedAt)}</span>}
-            </div>
+      {posts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-black/10 bg-surface p-12 text-center">
+          <div className="grid size-12 place-items-center rounded-full bg-navy/5 text-navy">
+            <ImageIcon className="size-6 text-muted" />
           </div>
-        ))}
-      </div>
+          <h3 className="mt-3 text-[16px] font-bold text-navy">No posts published yet</h3>
+          <p className="mt-1 text-label text-muted">Create your first feed post or announcement for members.</p>
+          <Button className="mt-4" onClick={() => setCreateOpen(true)} icon={<Plus className="size-4" />}>
+            Create Post
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {posts.map((p) => (
+            <div key={p.id} className="overflow-hidden rounded-2xl border border-black/[0.06] bg-surface p-4 shadow-sm transition-all hover:border-black/10">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 flex-1 items-start gap-3.5">
+                  {p.imageUrl ? (
+                    <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border border-black/10 bg-navy/5 sm:size-20">
+                      <img src={p.imageUrl} alt={p.title} className="size-full object-cover" />
+                    </div>
+                  ) : null}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusPill tone={p.status === 'published' ? 'success' : 'neutral'}>{p.status}</StatusPill>
+                      <StatusPill tone="brand">{p.category}</StatusPill>
+                      {p.imageUrl && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted">
+                          <ImageIcon className="size-3 text-[#007AFF]" />
+                          Has Image
+                        </span>
+                      )}
+                      {p.taggedMemberName && <span className="text-caption font-semibold text-navy">· {p.taggedMemberName}</span>}
+                    </div>
+                    <h2 className="mt-2 text-[15.5px] font-bold text-navy">{p.title}</h2>
+                    {p.content && <p className="mt-1 line-clamp-2 text-label text-muted">{p.content}</p>}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
+                  <Button size="sm" variant="secondary" onClick={() => toggleStatus(p)}>
+                    {p.status === 'published' ? 'Unpublish' : 'Publish'}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => removePost(p.id)}
+                    className="grid size-8 place-items-center rounded-full text-danger hover:bg-danger-bg"
+                    aria-label="Delete post"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center gap-4 border-t border-line pt-2.5 text-caption font-semibold text-muted">
+                <span className="inline-flex items-center gap-1">
+                  <Heart className="size-3.5 text-[#FF2D55]" />
+                  {p.likesCount} likes
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Eye className="size-3.5 text-[#007AFF]" />
+                  {p.viewsCount} views
+                </span>
+                {p.publishedAt && <span>Published {formatDate(p.publishedAt)}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Dialog
         open={createOpen}
@@ -182,9 +223,9 @@ export function AdminPostsView({
           </>
         }
       >
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Field label="Title">
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Post headline" />
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Post headline or key message" />
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Category">
@@ -210,6 +251,15 @@ export function AdminPostsView({
               </Select>
             </Field>
           </div>
+
+          <AdminImagePicker
+            label="Post Cover Image (Upload or URL)"
+            value={form.imageUrl}
+            onChange={(url) => setForm({ ...form, imageUrl: url })}
+            aspect="video"
+            helperText="Add a visual cover photo or flyer for this post (optional)."
+          />
+
           <Field label="Content">
             <Textarea
               rows={4}

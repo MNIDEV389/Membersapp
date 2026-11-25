@@ -24,7 +24,7 @@ export const Banners: CollectionConfig = {
       name: 'imageUrl',
       type: 'text',
       validate: (value: string | null | undefined) =>
-        !value || /^https:\/\/\S+$/i.test(value) || 'Image URL must start with https://',
+        !value || /^(https?:\/\/|data:image\/)/i.test(value) || 'Image URL must start with https:// or be an uploaded image',
     },
     { name: 'actionLabel', type: 'text', defaultValue: 'Learn more', maxLength: 30 },
     {
