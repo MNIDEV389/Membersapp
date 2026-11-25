@@ -48,6 +48,8 @@ export const POST = handler(async (req) => {
       amountLabel,
       story,
       createdAt: new Date(row.created_at).toISOString(),
+      clapsCount: 0,
+      isClappedByMe: false,
       fromMember: {
         id: member.id,
         fullName: member.fullName,

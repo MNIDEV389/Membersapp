@@ -172,6 +172,8 @@ export interface CelebrationVM {
   amountLabel: string
   story: string
   createdAt: string
+  clapsCount: number
+  isClappedByMe: boolean
 }
 
 export interface MeetupAttendeeVM {

@@ -86,6 +86,31 @@ export function HomeFeed({
   const isRequested = (p: PostVM | null) => Boolean(p?.taggedMember && requested.has(String(p.taggedMember.id)))
   const isMine = (p: PostVM | null) => Boolean(p?.taggedMember && String(p.taggedMember.id) === String(myId))
 
+  const handleToggleClap = async (item: CelebrationVM) => {
+    const nextClapped = !item.isClappedByMe
+    const nextCount = Math.max(0, item.clapsCount + (nextClapped ? 1 : -1))
+    setCelebrations((prev) =>
+      prev.map((c) => (c.id === item.id ? { ...c, isClappedByMe: nextClapped, clapsCount: nextCount } : c)),
+    )
+    try {
+      const res = await api<{ ok: boolean; clapsCount: number; isClappedByMe: boolean }>(
+        `/api/app/celebrations/${item.id}/clap`,
+        { body: {} },
+      )
+      setCelebrations((prev) =>
+        prev.map((c) =>
+          c.id === item.id ? { ...c, isClappedByMe: res.isClappedByMe, clapsCount: res.clapsCount } : c,
+        ),
+      )
+    } catch {
+      setCelebrations((prev) =>
+        prev.map((c) =>
+          c.id === item.id ? { ...c, isClappedByMe: item.isClappedByMe, clapsCount: item.clapsCount } : c,
+        ),
+      )
+    }
+  }
+
   // Optimistic Like toggle
   const handleToggleLike = async (post: PostVM) => {
     const nextLiked = !post.isLikedByMe
@@ -233,7 +258,7 @@ export function HomeFeed({
                 Be the first to share a deal or partnership closed through MNI!
               </EmptyState>
             ) : (
-              celebrations.map((c) => <CelebrationCard key={c.id} item={c} />)
+              celebrations.map((c) => <CelebrationCard key={c.id} item={c} onClap={handleToggleClap} />)
             )}
           </div>
         ) : feedPosts.length === 0 ? (
@@ -246,7 +271,9 @@ export function HomeFeed({
           </EmptyState>
         ) : (
           <div className="space-y-4">
-            {activeFilter === 'all' && celebrations[0] && <CelebrationCard item={celebrations[0]} />}
+            {activeFilter === 'all' && celebrations[0] && (
+              <CelebrationCard item={celebrations[0]} onClap={handleToggleClap} />
+            )}
             {visible.map((post, i) => (
               <Fragment key={post.id}>
                 <TimelineCard

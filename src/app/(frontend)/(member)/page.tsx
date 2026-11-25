@@ -9,7 +9,7 @@ export default async function HomePage() {
   const me = await requireMember()
   const [{ posts, banners, requestedMemberIds }, { celebrations, membersForPicker }] = await Promise.all([
     getTimeline(me),
-    getCelebrations(),
+    getCelebrations(me.id),
   ])
   const firstName = me.fullName.split(' ')[0]
 

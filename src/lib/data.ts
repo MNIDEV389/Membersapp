@@ -382,12 +382,12 @@ export async function getNotifications(me: Me): Promise<{ items: NotificationVM[
 }
 
 /** Closed Business Celebrations for the Feed & Engagement showcase. */
-export async function getCelebrations(): Promise<{
+export async function getCelebrations(meId?: number): Promise<{
   celebrations: CelebrationVM[]
   membersForPicker: { id: number; fullName: string; businessName: string }[]
 }> {
   const pool = getPgPool()
-  const [celRes, memRes] = await Promise.all([
+  const [celRes, memRes, clapsRes] = await Promise.all([
     pool.query(
       `SELECT c.id, c.amount_label, c.story, c.created_at,
               f.id AS f_id, f.full_name AS f_name, f.avatar_initials AS f_init, f.custom_avatar AS f_av, f.business_name AS f_biz,
@@ -401,15 +401,30 @@ export async function getCelebrations(): Promise<{
     pool.query(
       `SELECT id, full_name, business_name FROM members WHERE account_status IS DISTINCT FROM 'suspended' ORDER BY full_name ASC`,
     ),
+    pool.query(
+      `SELECT celebration_id, COUNT(*)::int AS count, BOOL_OR(member_id = $1) AS clapped
+       FROM celebration_claps
+       GROUP BY celebration_id`,
+      [meId ?? 0],
+    ),
   ])
 
+  const clapsMap = new Map<number, { count: number; clapped: boolean }>()
+  for (const r of clapsRes.rows) {
+    clapsMap.set(Number(r.celebration_id), { count: Number(r.count), clapped: Boolean(r.clapped) })
+  }
+
   return {
-    celebrations: celRes.rows.map((r) => ({
-      id: r.id,
-      amountLabel: r.amount_label,
-      story: r.story,
-      createdAt: new Date(r.created_at).toISOString(),
-      fromMember: {
+    celebrations: celRes.rows.map((r) => {
+      const c = clapsMap.get(Number(r.id))
+      return {
+        id: r.id,
+        amountLabel: r.amount_label,
+        story: r.story,
+        createdAt: new Date(r.created_at).toISOString(),
+        clapsCount: c?.count ?? 0,
+        isClappedByMe: c?.clapped ?? false,
+        fromMember: {
         id: r.f_id,
         fullName: r.f_name,
         avatarInitials: r.f_init || r.f_name.slice(0, 2).toUpperCase(),
@@ -423,7 +438,8 @@ export async function getCelebrations(): Promise<{
         avatarUrl: r.t_av || null,
         businessName: r.t_biz,
       },
-    })),
+      }
+    }),
     membersForPicker: memRes.rows.map((m) => ({
       id: Number(m.id),
       fullName: m.full_name,
