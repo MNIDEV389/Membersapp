@@ -32,6 +32,16 @@ export function AppHeader({ initialUnread = 0 }: { initialUnread?: number }) {
   }, [])
 
   useEffect(() => {
+    // Fetch unread badge in background so SSR page switches are never blocked
+    api<{ items: NotificationVM[]; unreadCount: number }>('/api/app/notifications')
+      .then((data) => {
+        setItems(data.items)
+        setUnread(data.unreadCount)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     if (open) load()
   }, [open, load])
 

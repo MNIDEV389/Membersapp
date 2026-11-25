@@ -56,75 +56,78 @@ export async function getTimeline(me: Me) {
         .filter((id): id is number => id != null),
     ),
   ]
-  const tagged = taggedIds.length
-    ? await payload.find({
-        collection: 'members',
-        where: { and: [{ id: { in: taggedIds } }, { accountStatus: { not_equals: 'suspended' } }] },
-        overrideAccess: true,
-        depth: 1,
-        limit: taggedIds.length,
-      })
-    : { docs: [] as Member[] }
-  const byId = new Map(tagged.docs.map((m) => [m.id, m]))
-
-  const requestedMemberIds = myRequests.docs.map((r) =>
-    typeof r.targetMember === 'object' ? r.targetMember.id : r.targetMember,
-  )
-
   const postIds = posts.docs.map((p) => p.id)
   const likesMap = new Map<number, { count: number; liked: boolean }>()
   const viewsMap = new Map<number, { count: number; viewed: boolean }>()
   const seenByMap = new Map<number, PostSeenByMember[]>()
 
-  if (postIds.length > 0) {
-    try {
-      const pool = getPgPool()
-      const [lRes, vRes, sRes] = await Promise.all([
-        pool.query(
-          `SELECT post_id, COUNT(*)::int AS count, BOOL_OR(member_id = $1) AS liked
-           FROM post_likes
-           WHERE post_id = ANY($2::int[])
-           GROUP BY post_id`,
-          [me.id, postIds],
-        ),
-        pool.query(
-          `SELECT post_id, COUNT(*)::int AS count, BOOL_OR(member_id = $1) AS viewed
-           FROM post_views
-           WHERE post_id = ANY($2::int[])
-           GROUP BY post_id`,
-          [me.id, postIds],
-        ),
-        pool.query(
-          `SELECT pv.post_id, m.id, m.full_name, m.business_name, m.avatar_initials, m.custom_avatar, pv.viewed_at
-           FROM post_views pv
-           JOIN members m ON m.id = pv.member_id
-           WHERE pv.post_id = ANY($1::int[])
-           ORDER BY pv.viewed_at DESC`,
-          [postIds],
-        ),
-      ])
-
-      for (const row of lRes.rows) {
-        likesMap.set(Number(row.post_id), { count: Number(row.count), liked: Boolean(row.liked) })
-      }
-      for (const row of vRes.rows) {
-        viewsMap.set(Number(row.post_id), { count: Number(row.count), viewed: Boolean(row.viewed) })
-      }
-      for (const row of sRes.rows) {
-        const pid = Number(row.post_id)
-        const list = seenByMap.get(pid) ?? []
-        list.push({
-          id: row.id,
-          fullName: row.full_name,
-          avatarInitials: row.avatar_initials || row.full_name.slice(0, 2).toUpperCase(),
-          avatarUrl: row.custom_avatar || null,
-          businessName: row.business_name,
-          viewedAt: new Date(row.viewed_at).toISOString(),
+  const pool = getPgPool()
+  const [tagged, socialResults] = await Promise.all([
+    taggedIds.length
+      ? payload.find({
+          collection: 'members',
+          where: { and: [{ id: { in: taggedIds } }, { accountStatus: { not_equals: 'suspended' } }] },
+          overrideAccess: true,
+          depth: 1,
+          limit: taggedIds.length,
         })
-        seenByMap.set(pid, list)
-      }
-    } catch (e) {
-      console.error('Error fetching post social metrics:', e)
+      : Promise.resolve({ docs: [] as Member[] }),
+    postIds.length > 0
+      ? Promise.all([
+          pool.query(
+            `SELECT post_id, COUNT(*)::int AS count, BOOL_OR(member_id = $1) AS liked
+             FROM post_likes
+             WHERE post_id = ANY($2::int[])
+             GROUP BY post_id`,
+            [me.id, postIds],
+          ),
+          pool.query(
+            `SELECT post_id, COUNT(*)::int AS count, BOOL_OR(member_id = $1) AS viewed
+             FROM post_views
+             WHERE post_id = ANY($2::int[])
+             GROUP BY post_id`,
+            [me.id, postIds],
+          ),
+          pool.query(
+            `SELECT pv.post_id, m.id, m.full_name, m.business_name, m.avatar_initials, m.custom_avatar, pv.viewed_at
+             FROM post_views pv
+             JOIN members m ON m.id = pv.member_id
+             WHERE pv.post_id = ANY($1::int[])
+             ORDER BY pv.viewed_at DESC`,
+            [postIds],
+          ),
+        ]).catch((e) => {
+          console.error('Error fetching post social metrics:', e)
+          return null
+        })
+      : Promise.resolve(null),
+  ])
+
+  const byId = new Map(tagged.docs.map((m) => [m.id, m]))
+  const requestedMemberIds = myRequests.docs.map((r) =>
+    typeof r.targetMember === 'object' ? r.targetMember.id : r.targetMember,
+  )
+
+  if (socialResults) {
+    const [lRes, vRes, sRes] = socialResults
+    for (const row of lRes.rows) {
+      likesMap.set(Number(row.post_id), { count: Number(row.count), liked: Boolean(row.liked) })
+    }
+    for (const row of vRes.rows) {
+      viewsMap.set(Number(row.post_id), { count: Number(row.count), viewed: Boolean(row.viewed) })
+    }
+    for (const row of sRes.rows) {
+      const pid = Number(row.post_id)
+      const list = seenByMap.get(pid) ?? []
+      list.push({
+        id: row.id,
+        fullName: row.full_name,
+        avatarInitials: row.avatar_initials || row.full_name.slice(0, 2).toUpperCase(),
+        avatarUrl: row.custom_avatar || null,
+        businessName: row.business_name,
+        viewedAt: new Date(row.viewed_at).toISOString(),
+      })
+      seenByMap.set(pid, list)
     }
   }
 
