@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
 import { api } from '@/lib/client-api'
-import { formatDate, formatNumber, websiteHref } from '@/lib/format'
+import { formatDate, websiteHref } from '@/lib/format'
 import type { SelfProfile } from '@/lib/view-models'
 import { Avatar, TierBadge, VerifiedMark } from '../ui/Badges'
 import { Button } from '../ui/Button'
@@ -145,11 +145,6 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
             </div>
           </div>
         </div>
-        <dl className="mt-5 grid grid-cols-3 divide-x divide-white/15 rounded-2xl bg-white/[0.07] py-3 text-center ring-1 ring-white/10">
-          <Stat label="MNI Coins" value={formatNumber(profile.mniCoins)} accent />
-          <Stat label="Rank" value={`#${rank}`} />
-          <Stat label="Referrals" value={String(profile.referralCount)} />
-        </dl>
         <Button variant="on-navy" fullWidth className="mt-4" onClick={() => setEditing(true)} icon={<PencilLine className="size-4" aria-hidden="true" />}>
           {pending ? 'Update pending changes' : 'Edit profile'}
         </Button>
@@ -255,15 +250,6 @@ export function ProfileView({ profile, rank, pending }: { profile: SelfProfile; 
       >
         <p className="text-body text-muted">Signed in as <span className="font-semibold text-ink">{profile.email}</span>.</p>
       </Dialog>
-    </div>
-  )
-}
-
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="px-2">
-      <dt className="text-caption font-medium text-on-navy-muted">{label}</dt>
-      <dd className={accent ? 'mt-0.5 text-section font-extrabold tabular-nums text-[#f6c453]' : 'mt-0.5 text-section font-extrabold tabular-nums'}>{value}</dd>
     </div>
   )
 }
