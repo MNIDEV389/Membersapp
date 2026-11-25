@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, ChevronRight, Coins, Copy, Gift, Trophy, Users } from 'lucide-react'
+import { ChevronRight, Coins, Gift, Trophy, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
@@ -29,7 +29,7 @@ interface Props {
   referrals: ReferralVM[]
 }
 
-export function ReferView({ initialTab, coins, rank, referralCode, referrals }: Props) {
+export function ReferView({ initialTab, coins, rank, referrals }: Props) {
   const router = useRouter()
   const toast = useToast()
   const [tab, setTab] = useState<TabId>(initialTab)
@@ -37,23 +37,11 @@ export function ReferView({ initialTab, coins, rank, referralCode, referrals }: 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [copied, setCopied] = useState(false)
   const pendingCoins = referrals.filter((r) => r.status === 'pending_review').length * COINS_PER_REFERRAL
 
   const set = (k: keyof typeof empty) => (e: { target: { value: string } }) => {
     setForm((f) => ({ ...f, [k]: e.target.value }))
     if (errors[k]) setErrors(({ [k]: _, ...rest }) => rest)
-  }
-
-  const copy = async () => {
-    if (!referralCode) return
-    try {
-      await navigator.clipboard.writeText(referralCode)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      toast('Couldn’t copy — long-press the code to copy it.', 'error')
-    }
   }
 
   const submit = async (e: FormEvent) => {
@@ -106,23 +94,10 @@ export function ReferView({ initialTab, coins, rank, referralCode, referrals }: 
           </div>
         </div>
         <Link href="/rewards" className="mt-5 flex min-h-11 items-center justify-between rounded-[var(--radius-control)] bg-white/12 px-4 text-label font-semibold ring-1 ring-white/20 hover:bg-white/20">
-          <span className="flex items-center gap-2"><Trophy className="size-4 text-[#f6c453]" aria-hidden="true" />Leaderboard & meetup prizes</span>
+          <span className="flex items-center gap-2"><Trophy className="size-4 text-[#f6c453]" aria-hidden="true" />Leaderboard &amp; Active Points</span>
           <ChevronRight className="size-4" aria-hidden="true" />
         </Link>
       </section>
-
-      {referralCode && (
-        <div className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-card">
-          <div>
-            <p className="text-caption font-semibold uppercase tracking-wider text-muted">Your invite code</p>
-            <p className="font-mono text-section font-bold tracking-wide text-navy">{referralCode}</p>
-          </div>
-          <Button variant="secondary" size="sm" onClick={copy} icon={copied ? <Check className="size-4" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}>
-            {copied ? 'Copied' : 'Copy'}
-          </Button>
-          <span className="sr-only" aria-live="polite">{copied ? 'Invite code copied' : ''}</span>
-        </div>
-      )}
 
       <SegmentedTabs<TabId>
         label="Referral sections"
