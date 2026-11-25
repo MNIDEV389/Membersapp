@@ -1,16 +1,20 @@
 'use client'
 
 import {
+  Children,
   cloneElement,
   isValidElement,
+  useEffect,
   useId,
+  useRef,
+  useState,
   type InputHTMLAttributes,
   type ReactElement,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
-import { AlertCircle, ChevronsUpDown } from 'lucide-react'
+import { AlertCircle, Check, ChevronsUpDown } from 'lucide-react'
 import { cn } from './cn'
 
 const control =
@@ -34,24 +38,113 @@ export function Textarea({ invalid, className, ...props }: TextareaHTMLAttribute
   )
 }
 
-export function Select({ invalid, className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
+export function Select({
+  invalid,
+  className,
+  children,
+  value,
+  onChange,
+  id,
+  name,
+  disabled,
+}: SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Extract options from React children
+  const options = Children.toArray(children)
+    .filter(isValidElement)
+    .map((child: any) => ({
+      value: String(child.props.value ?? ''),
+      label: String(child.props.children ?? child.props.value ?? ''),
+    }))
+
+  const selectedOption = options.find((o) => o.value === String(value)) ?? options[0]
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleOutsideClick)
+      document.addEventListener('keydown', handleEscape)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [open])
+
+  const select = (optValue: string) => {
+    if (onChange) {
+      const event = {
+        target: { value: optValue, name: name ?? '' },
+        currentTarget: { value: optValue, name: name ?? '' },
+      } as unknown as React.ChangeEvent<HTMLSelectElement>
+      onChange(event)
+    }
+    setOpen(false)
+  }
+
   return (
-    <div className="relative w-full">
-      <select
+    <div ref={containerRef} className="relative w-full">
+      {/* Hidden input for form data */}
+      <input type="hidden" id={id} name={name} value={value} />
+
+      {/* Apple Pop-up Trigger Button */}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(!open)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-invalid={invalid || undefined}
         className={cn(
           control,
           controlState(invalid),
-          'h-11 sm:h-12 cursor-pointer appearance-none [appearance:none] [-webkit-appearance:none] [-moz-appearance:none] pr-10 font-medium text-[14px] sm:text-[15px] truncate',
+          'flex h-11 sm:h-12 w-full items-center justify-between gap-2 pr-3.5 pl-3.5 text-left font-medium text-[14px] sm:text-[15px] select-none transition-all active:scale-[0.99]',
+          open && 'border-[#007AFF] ring-[3.5px] ring-[#007AFF]/15 bg-white',
           className,
         )}
-        aria-invalid={invalid || undefined}
-        {...props}
       >
-        {children}
-      </select>
-      <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center text-[#8E8E93]">
-        <ChevronsUpDown className="size-4" strokeWidth={2} aria-hidden="true" />
-      </div>
+        <span className="truncate text-[#1C1C1E]">{selectedOption ? selectedOption.label : 'Select an option'}</span>
+        <ChevronsUpDown className="size-4 shrink-0 text-[#8E8E93]" strokeWidth={2} aria-hidden="true" />
+      </button>
+
+      {/* Floating Apple Menu List */}
+      {open && (
+        <div
+          role="listbox"
+          className="absolute left-0 top-[calc(100%+6px)] z-50 w-full min-w-[240px] overflow-hidden rounded-2xl border border-black/[0.08] bg-white/95 p-1.5 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-xl animate-fade-in"
+        >
+          {options.map((opt) => {
+            const isSelected = opt.value === String(value)
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => select(opt.value)}
+                className={cn(
+                  'flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors',
+                  isSelected
+                    ? 'bg-[#007AFF]/10 font-semibold text-[#007AFF]'
+                    : 'text-[#1C1C1E] hover:bg-[#F2F2F7] active:bg-[#E5E5EA]',
+                )}
+              >
+                <span className="truncate">{opt.label}</span>
+                {isSelected && <Check className="size-4 shrink-0 text-[#007AFF]" strokeWidth={2.5} aria-hidden="true" />}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
